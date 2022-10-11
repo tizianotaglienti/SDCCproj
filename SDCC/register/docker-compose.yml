@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  register:
+    hostname: register
+    container_name: register
+    build:
+      context: ./
+      dockerfile: register/Dockerfile
+    stop_signal: SIGTERM
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+
+  node:
+    hostname: node
+    hostname: node
+    build:
+      context: ./
+      dockerfile: node/Dockerfile
+    depends_on:
+      - register
+    stop_signal: SIGTERM
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    deploy:
+      mode: replicated
+      replicas: 3
