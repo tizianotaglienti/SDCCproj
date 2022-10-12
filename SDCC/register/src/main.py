@@ -11,7 +11,7 @@ import sys
 # crea classe Register che entra nella rete e offre la registrazione agli altri membri
 class Register:
 
-    # la classe inizializza gli attributi dell'oggetto
+    # inizializza gli attributi dell'oggetto
     def __init__(self, verbose: bool, config_path: str):
         with open(config_path, "r") as config_file:
             config = json.load(config_file)

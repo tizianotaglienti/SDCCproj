@@ -18,11 +18,12 @@ def run():
         parser.error("No json file passed")
 
     os.system("clear")
-    intro = pyfiglet.figlet_format("REGISTER")
-    print(intro)
-    # print("(Info: https://github.com/matt-merman/sdcc)\n")
 
-    register = Register(args.verbose, args.config_file, False)
+    print(pyfiglet.figlet_format("REGISTER"))
+
+    # chiamo oggetto Register con argomenti verbose e config_file ottenuti dal parser
+    register = Register(args.verbose, args.config_file)
+    # chiamata ai metodi receive e send definiti nel main
     register.receive()
     register.send()
 
