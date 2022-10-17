@@ -1,7 +1,7 @@
-from src.main import Register
 import argparse
 import os
 import pyfiglet
+from src.main import Register
 
 def run():
     # oggetto ArgumentParser mantiene le informazioni necessarie a parsare la linea di comando in tipi di dato di Python

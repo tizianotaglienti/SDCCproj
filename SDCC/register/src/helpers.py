@@ -2,7 +2,7 @@ import json
 import logging
 import socket
 from random import randint
-from register.src import constants as constants
+from . import constants as constants
 
 def set_logging() -> logging:
     logging.basicConfig(
@@ -26,4 +26,4 @@ def logging_rx(flag: bool, logging: logging, receiver: tuple, sender: tuple, id:
 
 def logging_tx(flag: bool, logging: logging, receiver: tuple, sender: tuple, id: int, data: list):
     if flag:
-        logging.debug("[Node]: (ip:{} port:{} id:{})\n[Receiver]: (ip:{} port:{})\n[Message]: {}\n".format(sender[0], sender[1], id, receiver[0], receiver[1], data))
+        logging.debug("Node: (ip:{} port:{} id:{})\nReceiver: (ip:{} port:{})\nMessage: {}\n".format(sender[0], sender[1], id, receiver[0], receiver[1], data))

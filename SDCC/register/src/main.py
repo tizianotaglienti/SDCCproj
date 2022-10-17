@@ -1,9 +1,8 @@
 import socket
 import json
 
-import self as self
-
-from register.src import helpers as helpers, constants as constants
+from . import helpers as helpers
+from . import constants as constants
 import signal
 import sys
 
@@ -27,7 +26,7 @@ class Register:
 
         # creazione socket
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSADDR, 1)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind((self.ip, self.port))  # associazione socket con una specifica interfaccia di rete e un numero di porta
 
         # inizializzazione lista di connessioni
@@ -40,7 +39,7 @@ class Register:
         # usato il flag -v per offrire esecuzione "verbose"
         if self.verbose:
             # inserisce un messaggio di livello DEBUG sul logger
-            self.logging.debug("Register = (ip: {}, port: {}\nTriggered\n".format(self.ip, self.port))
+            self.logging.debug("Register = (ip: {}, port: {})\nTriggered\n".format(self.ip, self.port))
 
         # inizializzazione lista di identificatori
         ids = []
