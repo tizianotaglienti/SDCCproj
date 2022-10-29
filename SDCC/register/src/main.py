@@ -87,8 +87,15 @@ class Register:
             port = self.nodes[node]["port"]
             id = self.nodes[node]["id"]
             helpers.logging_tx(self.verbose, self.logging, (ip, port), (self.ip, self.port), id, self.nodes)
+            # if node == ultimo nodo then metti flag
+                #msg = {'type': Type[el].value, 'data': data}
+            #else
+                #msg = {'type': -1, 'data': data}
 
+            #msg = json.dumps(msg)
+            #msg = str(msg).encode('utf-8')
             try:
+                #self.connections[node].send(msg)
                 self.connections[node].send(data)
             except socket.timeout:
                 print("No ack received from node with port {}". format(port))

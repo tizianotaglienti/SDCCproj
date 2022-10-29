@@ -26,6 +26,8 @@ class Node:
         self.verbose = verbose
         self.delay = delay
 
+        self.coord = constants.DEFAULT_ID
+
 
     def start(self):
         # creazione socket tcp momentanea
@@ -47,7 +49,7 @@ class Node:
         destination = (self.reg_ip, self.reg_port)
 
         try:
-            temporary_socket(destination)
+            temporary_socket.connect(destination)
         except ConnectionRefusedError:
             print("Register node not available")
             listening_socket.close()
@@ -57,16 +59,20 @@ class Node:
 
         # aspetta di ricevere la lista dei partecipanti alla rete
         data = temporary_socket.recv(constants.BUFF_SIZE)
+        #if data["type"] == Type[el].value:
+            #sono coord
         if not data:
             listening_socket.close()
             print("Register node crashed")
             sys.exit(1)
 
         msg = eval(data.decode('utf-8'))
+
         id = helpers.get_id(listening_socket.getsockname()[1], msg)
 
         verbose.logging_rx(self.verbose, logging, listening_socket.getsockname()[0], destination, id, msg)
-
+        #print(msg[-1]["id"])
+        #print(id)
         temporary_socket.close()
 
         # controlla se c'è un solo nodo
@@ -75,6 +81,19 @@ class Node:
             print("Not enough nodes generated")
             sys.exit(1)
 
+        # si stabilisce subito un coordinatore
+        if (id == msg[-1]["id"]):
+            self.coordid = helpers.get_id(self.reg_port, msg)
+            print("I am the coordinator!")
+
+
+        #if self.algorithm:
+         #   Bully(sock.getsockname()[0], sock.getsockname()[1], identifier,
+          #        msg, sock, self.verbose, self.delay, self.algorithm, )
+        #else:
+         #   Ring(sock.getsockname()[0], sock.getsockname()[1], identifier,
+          #       msg, sock, self.verbose, self.delay, self.algorithm,)
+            #    a questo aggiungo come parametro anche l'id del coordinatore
 
 
 

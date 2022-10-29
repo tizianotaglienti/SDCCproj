@@ -23,3 +23,34 @@ class Type(Enum):
     HEARTBEAT = 3
     REGISTER = 4
     ACK = 5
+    # flag elected che si invia solo al nodo con id più alto per essere eletto insieme alla registrazione
+
+
+    def __init__(self, ip: str, port: int, id: int, nodes: list, socket: socket, verbose: bool, delay: bool, algorithm: bool):
+
+        self.ip = ip
+        self.port = port
+        self.id = id
+        self.nodes = nodes
+        self.socket = socket
+        self.algorithm = algorithm
+
+        self.coordid = DEFAULT_ID
+        self.lock = Lock()
+
+        # parametri passati da linea di comando
+        self.delay = delay
+        self.verbose = verbose
+
+        sign.signal(sign.SIGINT, self.handler)
+
+        self.logging = verb.set_logging()
+
+        self.participant = False
+
+        thread = Thread(target = self.listening)
+        thread.daemon = True
+        thread.start()
+
+        self.start_election()
+        Algorithm.heartbeat(self)

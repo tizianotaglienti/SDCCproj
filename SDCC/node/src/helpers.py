@@ -13,7 +13,7 @@ def create_socket(ip: str) -> socket:
 def message(id: int, type: int, port: int, ip: str) -> bytes:
     # creazione messaggio per comunicare id, numero di porta e indirizzo ip
     msg = {'type': type, 'id': id, 'port': port, 'ip': ip}
-    msg = json.dump(msg)
+    msg = json.dumps(msg)
     msg = str(msg).encode('utf-8')
     return msg
 

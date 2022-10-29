@@ -25,9 +25,7 @@ def run():
         parser.error('No json file passed')
 
     os.system("clear")
-    intro = pyfiglet.figlet_format("NODE", font="slant")
-    print(intro)
-    print("(Info: https://github.com/matt-merman/sdcc)\n")
+    intro = pyfiglet.figlet_format("NODE")
 
     algorithm = False
     if args.algorithm == "bully":
