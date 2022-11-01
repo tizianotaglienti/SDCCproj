@@ -2,13 +2,14 @@ from enum import Enum
 import socket
 import time
 import signal as sign
+from . import verbose as verbose
+
 import sys
 import os
-from . import helpers as help
+from . import helpers as helpers
 from .constants import LISTENING, TOTAL_DELAY, BUFF_SIZE, HEARTBEAT_TIME, DEFAULT_ID
 from abc import ABC, abstractmethod
 from threading import Thread, Lock
-from . import verbose as verb
 
 
 class Type(Enum):
@@ -23,10 +24,12 @@ class Type(Enum):
     HEARTBEAT = 3
     REGISTER = 4
     ACK = 5
+    FIRSTCOORD = 6
     # flag elected che si invia solo al nodo con id più alto per essere eletto insieme alla registrazione
 
+class Algorithm (ABC):
 
-    def __init__(self, ip: str, port: int, id: int, nodes: list, socket: socket, verbose: bool, delay: bool, algorithm: bool):
+    def __init__(self, ip: str, port: int, id: int, nodes: list, socket: socket, verb: bool, delay: bool, algorithm: bool):
 
         self.ip = ip
         self.port = port
@@ -40,11 +43,11 @@ class Type(Enum):
 
         # parametri passati da linea di comando
         self.delay = delay
-        self.verbose = verbose
+        self.verb = verb
 
         sign.signal(sign.SIGINT, self.handler)
 
-        self.logging = verb.set_logging()
+        self.logging = verbose.set_logging()
 
         self.participant = False
 
@@ -54,3 +57,22 @@ class Type(Enum):
 
         self.start_election()
         Algorithm.heartbeat(self)
+
+    @abstractmethod
+    def start_election(self):
+        pass
+
+    # TODO: CONTINUARE QUA ALGORITHM
+    #  INSERIRE IL COORDID IN INIT DI RING
+
+    def handler(self):
+        self.logging.debug("Node: (ip: {}, port: {}, id: {})\nKilled\n".format(self.ip, self.port, self.id))
+        self.socket.close()
+        sys.exit(1)
+
+    def listening(self):
+        while True:
+
+    def heartbeat(self):
+
+

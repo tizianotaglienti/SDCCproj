@@ -7,6 +7,7 @@ import os
 import socket
 
 class ChangRoberts(Algorithm):
+
     def __init__(self, ip: str, port: int, id: int, nodes: list, socket: socket, verbose: bool, delay: bool, algorithm: bool):
         Algorithm.__init__(self, ip, port, id, nodes, socket, verbose, delay, algorithm)
 
@@ -20,7 +21,8 @@ class ChangRoberts(Algorithm):
         self.participant = True
         if self.coordid == constants.DEFAULT_ID:
             self.forwarding(self.id, Type['ELECTION'])
-        else:
+        else:   # coordid != -1 quindi si tratta del nodo già eletto coordinatore
+                # allora quel nodo invia subito un messaggio per concludere l'elezione
             self.forwarding(self.id, Type['END'])
         self.lock.release()
 
@@ -71,9 +73,9 @@ class ChangRoberts(Algorithm):
         msg = helpers.message(id, type.value, self.port, self.ip)
 
         try:
-            dest = (node["ip"], node["port"])
-            socket.connect(dest)
-            # verbose.logging_tx(...)
+            destination = (node["ip"], node["port"])
+            socket.connect(destination)
+            verbose.logging_tx(self.verbose, self.logging, destination, (self.ip, self.port), self.id, eval(msg.decode('utf-8')))
             socket.send(msg)
             socket.close()
 
