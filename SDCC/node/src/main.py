@@ -11,7 +11,7 @@ from .changroberts import ChangRoberts, Type
 from .algorithm import Type
 
 
-# crea classe Node che registra il nodo corrente alla rete e inizia un algoritmo tra i due definiti
+# crea classe Node che registra il processo corrente alla rete e inizia un algoritmo tra i due definiti
 
 class Node:
 
@@ -84,13 +84,15 @@ class Node:
             sys.exit(1)
 
         # si stabilisce subito un coordinatore
-        if (id == msg[-1]["id"]):
-            self.coordid = helpers.get_id(listening_socket.getsockname()[1], msg)
-            verbose.first_coordinator(self.verbose, logging, self.coordid)
+        #if (id == msg[-1]["id"]):
+        self.coordid = msg[-1]["id"]
+            #verbose.first_coordinator(self.verbose, logging, self.coordid)
+        if (id == self.coordid):
             print("> I am the coordinator!")
 
-        else:
-            verbose.first_coordinator(self.verbose, logging, msg[-1]["id"])
+        #else:
+
+        verbose.first_coordinator(self.verbose, logging, msg[-1]["id"])
 
 
         # if self.algorithm:
@@ -102,7 +104,7 @@ class Node:
         #     # a questo aggiungo come parametro anche l'id del coordinatore
 
         if not self.algorithm:
-            ChangRoberts(listening_socket.getsockname()[0], listening_socket.getsockname()[1], id, msg, listening_socket, self.verbose, self.delay, self.algorithm)
+            ChangRoberts(listening_socket.getsockname()[0], listening_socket.getsockname()[1], id, msg, listening_socket, self.verbose, self.delay, self.algorithm, self.coordid)
 
 
 

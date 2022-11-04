@@ -23,3 +23,16 @@ def get_id(port: int, list: list) -> int:
         if item.get('port') == port:
             return item.get('id')
     return 0
+
+def get_index(id: int, list: list) -> int:
+    index = 0
+    for item in list:
+        if item.get('id') == id:
+            return index
+        index += 1
+    return 0
+
+def delay(flag: bool, ub: int):
+    if flag:
+        delay = randint(0, floor(ub*1.5))
+        time.sleep(delay)
