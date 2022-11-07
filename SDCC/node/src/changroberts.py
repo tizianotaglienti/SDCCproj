@@ -96,18 +96,19 @@ class ChangRoberts(Algorithm):
     # metodo che descrive inoltro di un messaggio
     def forwarding(self, id: int, type: Type):
         socket = helpers.create_socket(self.ip)
+        # c'è un delay se viene specificato con flag da linea di comando
         helpers.delay(self.delay, constants.HEARTBEAT_TIME)
 
         index = helpers.get_index(self.id, self.nodes) + 1
         if index >= len(self.nodes):
             index = 0
-
+        # scelta del processo successivo nell'anello
         node = self.nodes[index]
         msg = helpers.message(id, type.value, self.port, self.ip)
 
         try:
             destination = (node["ip"], node["port"])
-            socket.connect(destination)
+            socket.connect(destination)     # connessione al processo successivo nell'anello
             verbose.logging_tx(self.verb, self.logging, destination, (self.ip, self.port), self.id, eval(msg.decode('utf-8')))
             socket.send(msg)
             socket.close()

@@ -33,6 +33,7 @@ def get_index(id: int, list: list) -> int:
     return 0
 
 def delay(flag: bool, ub: int):
+    # genera un tempo che il mittente aspetta prima di inviare il pacchetto
     if flag:
         delay = randint(0, floor(ub*1.5))
         time.sleep(delay)

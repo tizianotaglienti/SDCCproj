@@ -29,6 +29,10 @@ class Type(Enum):
 
 class Algorithm (ABC):
 
+    # classe che verrà usata per i due algoritmi
+    # definendo una Abstract Base Class si può definire un'API per un insieme di sottoclassi
+
+    # inizializza gli attributi dell'oggetto
     def __init__(self, ip: str, port: int, id: int, nodes: list, socket: socket, verb: bool, delay: bool, algorithm: bool, coordid: int):
 
         self.ip = ip
@@ -51,14 +55,18 @@ class Algorithm (ABC):
 
         self.participant = False
 
+        # entrambi gli algoritmi inizializzano un listening thread
         thread = Thread(target = self.listening)
         thread.daemon = True
         thread.start()
 
-        #self.start_election()
-        print("ciaoaoaoao\n\n\n")
+        # un processo è gia eletto coordinatore alla fine della fase register
+        # quindi l'algoritmo inizia con i processi che gli inviano messaggi di heartbeat attendendo ACK
         Algorithm.heartbeat(self)
 
+
+    # metodi della classe di base
+    # -------------
     @abstractmethod
     def start_election(self):
         pass
@@ -78,8 +86,10 @@ class Algorithm (ABC):
     @abstractmethod
     def forwarding(self):
         pass
+    # -------------
 
 
+    # gestione di un processo interrotto (da linea di comando)
     def handler(self, signum: int, frame):
         self.logging.debug("Node: (ip: {}, port: {}, id: {})\nKilled\n".format(self.ip, self.port, self.id))
         self.socket.close()
@@ -140,13 +150,14 @@ class Algorithm (ABC):
 
 
     def crash(self):
-        # if using ring alg. remove the last node (a.k.a. leader)
+        # nel caso ChangRoberts si rimuove il nodo coordinatore
         if self.algorithm == False:
             self.nodes.pop()
 
         self.lock.release()
         self.start_election()
 
+    # heartbeat serve a rilevare crash del coordinatore
     def heartbeat(self):
         while True:
 
@@ -156,8 +167,8 @@ class Algorithm (ABC):
             time.sleep(HEARTBEAT_TIME)
             self.lock.acquire()
 
-            # do not heartbeat the leader if current node is running an election
-            # or if is the leader
+            # finché c'è un'elezione in corso non si mandano messaggi di heartbeat
+            # inoltre il coordinatore non può mandare messaggi di heartbeat
             if self.participant or (self.coordid in [self.id, DEFAULT_ID]):
                 self.lock.release()
                 continue
@@ -185,7 +196,6 @@ class Algorithm (ABC):
 
 
     def receive_ack(self, sock: socket, dest: tuple, waiting: int):
-
         # need to calculate the starting time to provide
         # a residual time to use as timeout when invalid packet is received
         start = round(time.time())
