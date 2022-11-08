@@ -93,7 +93,7 @@ class ChangRoberts(Algorithm):
         self.forwarding(current_id, Type['ELECTION'])
         self.lock.release()
 
-    # metodo che descrive inoltro di un messaggio
+    # metodo per l'inoltro di un messaggio
     def forwarding(self, id: int, type: Type):
         socket = helpers.create_socket(self.ip)
         # c'è un delay se viene specificato con flag da linea di comando
@@ -101,6 +101,7 @@ class ChangRoberts(Algorithm):
 
         index = helpers.get_index(self.id, self.nodes) + 1
         if index >= len(self.nodes):
+            # se sono il processo con id più alto (ultimo nella lista) il mio successivo è il primo
             index = 0
         # scelta del processo successivo nell'anello
         node = self.nodes[index]
@@ -114,6 +115,7 @@ class ChangRoberts(Algorithm):
             socket.close()
 
         except ConnectionRefusedError:
+            # tolgo nodo crashato dalla lista
             self.nodes.pop(index)
             socket.close()
             if len(self.nodes) != 1:

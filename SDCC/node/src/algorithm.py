@@ -24,7 +24,7 @@ class Type(Enum):
     HEARTBEAT = 3
     REGISTER = 4
     ACK = 5
-    FIRSTCOORD = 6
+    #FIRSTCOORD = 6
     # flag elected che si invia solo al nodo con id più alto per essere eletto insieme alla registrazione
 
 class Algorithm (ABC):
@@ -114,7 +114,7 @@ class Algorithm (ABC):
 
             data = connection.recv(BUFF_SIZE)
 
-            if not data:
+            if not data:    # FIN ACK
                 continue
 
             data = eval(data.decode('utf-8'))
@@ -122,6 +122,7 @@ class Algorithm (ABC):
             verbose.logging_rx(self.verb, self.logging, (self.ip, self.port),
                               address, self.id, data)
 
+            # messaggio di tipo 3
             if data["type"] == Type['HEARTBEAT'].value:
 
                 helpers.delay(self.delay, TOTAL_DELAY)
@@ -136,6 +137,7 @@ class Algorithm (ABC):
                 connection.close()
                 continue
 
+            # messaggio di tipo 2
             elif data["type"] == Type['ANSWER'].value:
                 self.answer()
                 connection.close()
@@ -179,25 +181,24 @@ class Algorithm (ABC):
             msg = helpers.message(
                 self.id, Type['HEARTBEAT'].value, address[1], address[0])
 
-            dest = (info["ip"], info["port"])
-            verbose.logging_tx(self.verb, self.logging, dest,
-                              (self.ip, self.port), self.id, eval(msg.decode('utf-8')))
+            destination = (info["ip"], info["port"])
+
 
             try:
-                hb_sock.connect(dest)
+                hb_sock.connect(destination)
                 hb_sock.send(msg)
-                self.receive_ack(hb_sock, dest, TOTAL_DELAY)
+                verbose.logging_tx(self.verb, self.logging, destination, (self.ip, self.port), self.id, eval(msg.decode('utf-8')))
+                self.receive_ack(hb_sock, destination, TOTAL_DELAY)
 
-            # current leader suffers a crash
+            # il coordinatore crasha
             except ConnectionRefusedError:
                 hb_sock.close()
-                self.coordid = DEFAULT_ID
+                self.coordid = DEFAULT_ID   # conseguenza: nuova elezione
                 self.crash()
 
 
-    def receive_ack(self, sock: socket, dest: tuple, waiting: int):
-        # need to calculate the starting time to provide
-        # a residual time to use as timeout when invalid packet is received
+    def receive_ack(self, sock: socket, destination: tuple, waiting: int):
+        # si calcola il tempo iniziale con cui si calcola il tempo di attesa per il timeout
         start = round(time.time())
         sock.settimeout(waiting)
 
@@ -208,8 +209,6 @@ class Algorithm (ABC):
             self.crash()
             return
 
-        # when receive a FIN ACK it does not invoke recursive function
-        # due to maximum recursion depth exception
         if not data:
             sock.close()
             self.crash()
@@ -217,18 +216,17 @@ class Algorithm (ABC):
 
         msg = eval(data.decode('utf-8'))
 
-        # expected packet received (i.e., with current leaders' id and ack type)
+        # viene ricevuto un pacchetto atteso
         if (msg["id"] == self.coordid) and (msg["type"] == Type["ACK"].value):
             self.lock.release()
 
-        # invalid packet received (e.g., a delayed ack by the previous leader)
+        # ricevuto un pacchetto non valido
         else:
             stop = round(time.time())
-            waiting -= (stop-start)
-            self.receive_ack(sock, dest, waiting)
+            waiting -= (stop-start)     # ricalcolo del tempo di attesa
+            self.receive_ack(sock, destination, waiting)       # ricorsione
 
         addr = (msg["ip"], msg["port"])
-        verbose.logging_rx(self.verb, self.logging,
-                          dest, addr, self.id, msg)
+        verbose.logging_rx(self.verb, self.logging, destination, addr, self.id, msg)
         sock.close()
 

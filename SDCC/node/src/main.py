@@ -61,8 +61,7 @@ class Node:
 
         # aspetta di ricevere la lista dei partecipanti alla rete
         data = temporary_socket.recv(constants.BUFF_SIZE)
-        #if data["type"] == Type[el].value:
-            #sono coord
+
         if not data:
             listening_socket.close()
             print("Register node crashed")
@@ -73,8 +72,7 @@ class Node:
         id = helpers.get_id(listening_socket.getsockname()[1], msg)
 
         verbose.logging_rx(self.verbose, logging, listening_socket.getsockname()[0], destination, id, msg)
-        #print(msg[-1]["id"])
-        #print(id)
+
         temporary_socket.close()
 
         # controlla se c'è un solo nodo
@@ -84,26 +82,20 @@ class Node:
             sys.exit(1)
 
         # si stabilisce subito un coordinatore
-        #if (id == msg[-1]["id"]):
+        # l'ultimo processo nella lista, ossia quello con id maggiore
         self.coordid = msg[-1]["id"]
-            #verbose.first_coordinator(self.verbose, logging, self.coordid)
         if (id == self.coordid):
+            # debug
             print("> I am the coordinator!")
 
-        #else:
-
+        # comunicazione a tutti i processi (debug)
         verbose.first_coordinator(self.verbose, logging, msg[-1]["id"])
 
 
-        # if self.algorithm:
-        #     Bully(sock.getsockname()[0], sock.getsockname()[1], identifier,
-        #     msg, sock, self.verbose, self.delay, self.algorithm, )
-        # else:
-        #     Ring(sock.getsockname()[0], sock.getsockname()[1], identifier,
-        #     msg, sock, self.verbose, self.delay, self.algorithm,)
-        #     # a questo aggiungo come parametro anche l'id del coordinatore
-
-        if not self.algorithm:
+        # esecuzione algoritmi (specificato da flag -a)
+        if self.algorithm:
+            Bully(listening_socket.getsockname()[0], listening_socket.getsockname()[1], id, msg, listening_socket, self.verbose, self.delay, self.algorithm, self.coordid)
+        else:
             ChangRoberts(listening_socket.getsockname()[0], listening_socket.getsockname()[1], id, msg, listening_socket, self.verbose, self.delay, self.algorithm, self.coordid)
 
 
