@@ -29,6 +29,51 @@ class Bully(Algorithm):
         # dal momento che molti dati sono acceduti contemporaneamente da piu thread
         self.lock.acquire()
 
+        # per far partire l'elezione un processo contatta i nodi con id maggiore del suo
+        index = helpers.get_index(self.id, self.nodes) + 1      # prende il suo index e lo aumenta di 1
+        self.participant = True     # per essere coinvolto nell'elezione
+        self.coordmsg = False
+
+        if (index != len(self.nodes)) and (self.lowest(index) == 0):
+            return
+        # se il processo è il più grande, index == len
+        # allora si imposta come coordinatore e l'elezione finisce
+        self.coordid = self.id
+        self.participant = False
+
+        # successivamente il processo avvisa tutti gli altri (running) inviando pacchetti END
+        # si evitano i processi morti per fallimento della connect
+        close = False
+        for node in range (len(self.nodes) - 1):
+            socket = helpers.create_socket()
+            if node == (index - 1):
+                continue
+            try:
+                socket.connect((self.nodes[node]["ip"], self.nodes[node]["port"]))
+                close = True
+                self.forwarding(self.nodes[node], self.id, Type["END"], socket)
+                socket.close()
+            except ConnectionRefusedError:
+                socket.close()
+                continue
+
+        # se non c'è nessuno nella rete si rimane in attesa infinita, per questo si crea la variabile close
+        # close = True solo se risponde qualcuno, altrimenti si termina l'esecuzione
+        if not close:
+            self.logging.debug("Node: (ip: {}, port: {}, id: {})\nEnds\n".format(self.ip, self.port, self.id))
+            self.socket.close()
+            os._exit(1)
+
+        self.lock.release()
+
+
+    def lowest(self, index: int) -> int:
+
+
+
+
+
+
         # per far partire l'elezione contatto i nodi con id più grande del mio
         # prendo il mio index e lo incremento di 1
         # setto participant a true per essere nell'elezione
