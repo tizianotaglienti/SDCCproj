@@ -18,8 +18,8 @@ class Bully(Algorithm):
     """
     # inizializza gli attributi dell'oggetto
     def __init__(self, ip: str, port: int, id: int, nodes: list, socket: socket, verbose: bool, delay: bool, algo: bool, coordid: int):
-        #
-        #
+        self.visited = 0
+        self.coordmsg = False
         Algorithm.__init__(self, ip, port, id, nodes, socket, verbose, delay, algo, coordid)
 
 
@@ -68,6 +68,61 @@ class Bully(Algorithm):
 
 
     def lowest(self, index: int) -> int:
+        # viene chiamato quando il leader crasha
+        # non all'inizio perché si parte con un leader subito dopo la registrazione
+        self.coordid = DEFAULT_ID
+
+        self.visited = len(self.nodes) - index
+        acked = self.visited
+
+        # il processo si connette e manda messaggio di tipo election a chi ha id superiore al suo
+        for node in range (index, len(self.nodes)):
+            socket = helpers.create_socket(self.ip)
+            try:
+                socket.connect((self.nodes[node]["ip"], self.nodes[node]["port"]))
+                self.forwarding(self.nodes[node], self.id, Trype["ELECTION"], socket)
+                socket.close()
+            except ConnectionRefusedError:
+                socket.close()
+                continue
+
+
+        self.lock.release()
+
+        timeout = time.time() + constants.TOTAL_DELAY
+        while (time.time() < timeout):
+            self.lock.acquire()
+            if self.visited != acked:
+                self.lock.release()
+
+                if self.wait() == 0:
+                    return 0
+                else:
+                    return 1
+
+            self.lock.release()
+
+        self.lock.acquire()
+        return 1
+
+        # se ritorna 1 bisogna inviare i pacchetti di election
+        # in questo caso si esce fuori dall'if iniziale
+
+        # se ritorna 0 finisce la start_election -> qualcuno con id maggiore ha risposto e si va in attesa
+        # ma prima di ritornare 0 si attendono per un certo timeout le ANSWER ai pacchetti che ho inviato
+            # questi messaggi si attendono nel metodo listening (algorithm.py)
+
+        # quando ricevo un pacchetto, se il tipo e ANSWER allora rispondo con un pacchetto adeguato
+            # ricevuto msg answer decremento la variabile globale checked_nodes ossia i nodi a cui ho inviato messaggio di elezione
+
+        # dopo aver decrementato controllo
+        # self.highernodes sara diverso da acknodes quindi il processo si aspetta un futuro messaggio di END perche qualcuno verra eletto
+        # questa attesa si modella con furtherwaiting (endwait potrei chiamarlo)
+
+        # VAI A FURTHERWAITING
+
+
+
 
 
 
@@ -87,7 +142,7 @@ class Bully(Algorithm):
     |    # se non c'è nessuno nella rete rimango in attesa infinita, per questo creo variabile close
     |        # close = True solo se mi risponde qualcuno (almeno 1) e quindi non termino l'esecuzione, altrimenti la termino
     |
-    --> # se non sono il nodo piu grande invoco il metodo low_id_node (DEVO CHIAMARLO SOLO QUANDO CRASHO E NON ALL'INIZIO PERCHE IO INIZIO CON LEADER)
+     \ -> # se non sono il nodo piu grande invoco il metodo low_id_node (DEVO CHIAMARLO SOLO QUANDO CRASHO E NON ALL'INIZIO PERCHE IO INIZIO CON LEADER)
         # mi connetto e mando msg election ai nodi con id superiore al mio (for node in range (index, len))
         # la variabile exit funziona come close: se nessuno mi contatta sono io il leader e ritorno 1
 
