@@ -10,12 +10,16 @@ import sys
 # creazione classe Register che entra nella rete e offre la registrazione agli altri membri
 class Register:
     # inizializza gli attributi dell'oggetto
-    def __init__(self, verbose: bool, config_path: str):
+    def __init__(self, verbose: bool, config_path: str, test: bool):
         with open(config_path, "r") as config_file:
             config = json.load(config_file)
 
         self.port = config["register"]["port"]
         self.ip = config["register"]["ip"]
+
+        self.test = test
+        if not test:
+            signal.signal(signal.SIGINT, self.handler)
 
         # lista dei nodi inizialmente vuota
         self.nodes = []
@@ -74,7 +78,7 @@ class Register:
             except socket.timeout:
                 break
 
-        self.nodes.sort(key=lambda x: x["id"])
+        self.nodes.sort(key = lambda x: x["id"])
 
 
     def send(self):
@@ -100,7 +104,16 @@ class Register:
                 print("No ack received from node with port {}". format(port))
 
 
+    def handler(self, signum: int, frame):
+        self.logging.debug("Register: (ip:{}, port:{})\nKilled\n".format(self.ip, self.port))
+        self.close()
 
+    def close(self):
+        self.sock.close()
+        sys.exit(1)
+
+    def get_list(self) -> list:
+        return self.nodes
 
 
 

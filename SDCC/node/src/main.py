@@ -7,6 +7,7 @@ from . import constants as constants
 from . import verbose as verbose
 
 from .changroberts import ChangRoberts, Type
+from .bully import Bully
 
 from .algorithm import Type
 

@@ -49,7 +49,8 @@ class Algorithm (ABC):
         self.delay = delay
         self.verb = verb
 
-        sign.signal(sign.SIGINT, self.handler)
+        sign.signal(sign.SIGTERM, self.handler)
+        #sign.signal(sign.SIGINT, self.handler)
 
         self.logging = verbose.set_logging()
 
@@ -112,7 +113,10 @@ class Algorithm (ABC):
                 self.socket.close()
                 os._exit(1)
 
-            data = connection.recv(BUFF_SIZE)
+            try:
+                data = connection.recv(BUFF_SIZE)
+            except ConnectionResetError:
+                continue
 
             if not data:    # FIN ACK
                 continue
@@ -193,7 +197,7 @@ class Algorithm (ABC):
             # il coordinatore crasha
             except ConnectionRefusedError:
                 hb_sock.close()
-                self.coordid = DEFAULT_ID   # conseguenza: nuova elezione
+                #self.coordid = DEFAULT_ID   # conseguenza: nuova elezione
                 self.crash()
 
 

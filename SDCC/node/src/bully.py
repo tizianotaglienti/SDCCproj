@@ -3,6 +3,7 @@ from . import constants as constants
 from .algorithm import Algorithm, Type
 import time
 import socket
+import os
 from . import verbose as verbose
 
 class Bully(Algorithm):
@@ -18,7 +19,7 @@ class Bully(Algorithm):
     """
     # inizializza gli attributi dell'oggetto
     def __init__(self, ip: str, port: int, id: int, nodes: list, socket: socket, verbose: bool, delay: bool, algo: bool, coordid: int):
-        self.visited = 0
+        self.highernodes = 0
         self.coordmsg = False
         Algorithm.__init__(self, ip, port, id, nodes, socket, verbose, delay, algo, coordid)
 
@@ -45,7 +46,7 @@ class Bully(Algorithm):
         # si evitano i processi morti per fallimento della connect
         close = False
         for node in range (len(self.nodes) - 1):
-            socket = helpers.create_socket()
+            socket = helpers.create_socket(self.ip)
             if node == (index - 1):
                 continue
             try:
@@ -66,36 +67,45 @@ class Bully(Algorithm):
 
         self.lock.release()
 
-
+    # se index != len(self.nodes) si passa al controllo successivo
     def lowest(self, index: int) -> int:
         # viene chiamato quando il leader crasha
         # non all'inizio perché si parte con un leader subito dopo la registrazione
-        self.coordid = DEFAULT_ID
+        self.coordid = constants.DEFAULT_ID
 
-        self.visited = len(self.nodes) - index
-        acked = self.visited
+        self.highernodes = len(self.nodes) - index
+        ackednodes = self.highernodes
+
+
+        exit = False
 
         # il processo si connette e manda messaggio di tipo election a chi ha id superiore al suo
         for node in range (index, len(self.nodes)):
             socket = helpers.create_socket(self.ip)
             try:
                 socket.connect((self.nodes[node]["ip"], self.nodes[node]["port"]))
-                self.forwarding(self.nodes[node], self.id, Trype["ELECTION"], socket)
+                self.forwarding(self.nodes[node], self.id, Type["ELECTION"], socket)
                 socket.close()
+                exit = True
             except ConnectionRefusedError:
                 socket.close()
                 continue
 
 
+        if exit == False:
+            return 1
         self.lock.release()
 
         timeout = time.time() + constants.TOTAL_DELAY
         while (time.time() < timeout):
             self.lock.acquire()
-            if self.visited != acked:
+
+            # se highernodes != ackednodes, il processo si aspetta un futuro messaggio di END, perché qualcuno verrà eletto
+            # questa attesa si modella con il metodo endwait
+            if self.highernodes != ackednodes:
                 self.lock.release()
 
-                if self.wait() == 0:
+                if self.endwait() == 0:
                     return 0
                 else:
                     return 1
@@ -112,58 +122,6 @@ class Bully(Algorithm):
         # ma prima di ritornare 0 si attendono per un certo timeout le ANSWER ai pacchetti che ho inviato
             # questi messaggi si attendono nel metodo listening (algorithm.py)
 
-        # quando ricevo un pacchetto, se il tipo e ANSWER allora rispondo con un pacchetto adeguato
-            # ricevuto msg answer decremento la variabile globale checked_nodes ossia i nodi a cui ho inviato messaggio di elezione
-
-        # dopo aver decrementato controllo
-        # self.highernodes sara diverso da acknodes quindi il processo si aspetta un futuro messaggio di END perche qualcuno verra eletto
-        # questa attesa si modella con furtherwaiting (endwait potrei chiamarlo)
-
-        # VAI A FURTHERWAITING
-
-
-
-
-
-
-
-
-
-        # per far partire l'elezione contatto i nodi con id più grande del mio
-        # prendo il mio index e lo incremento di 1
-        # setto participant a true per essere nell'elezione
-        # coord msg = False
-
-    ----# se io sono il piu grande esco perche index == len
-    |    # e quindi posso settarmi come coordinatore -> elezione finita: participant a False
-    |   #
-    |    # io leader avviso tutti i nodi (running process) inviando la forwarding di pacchetti END
-    |        # (evito i processi morti perche fallisce la connect in quel caso)
-    |    # se non c'è nessuno nella rete rimango in attesa infinita, per questo creo variabile close
-    |        # close = True solo se mi risponde qualcuno (almeno 1) e quindi non termino l'esecuzione, altrimenti la termino
-    |
-     \ -> # se non sono il nodo piu grande invoco il metodo low_id_node (DEVO CHIAMARLO SOLO QUANDO CRASHO E NON ALL'INIZIO PERCHE IO INIZIO CON LEADER)
-        # mi connetto e mando msg election ai nodi con id superiore al mio (for node in range (index, len))
-        # la variabile exit funziona come close: se nessuno mi contatta sono io il leader e ritorno 1
-
-    ---> # se ritorno 1 devo inviare i pacchetti di election (perche sono il capo) esco fuori dall'if con la freccetta disegnata
-
-        # se ritorno 0 ho finito la start_election --> qualcuno mi ha risposto (piu grande di me) e vado in attesa
-
-
-        # prima di ritornare 0, attendo le risposte (ANSWER) ai pacchetti che ho inviato per un certo tempo timeout
-
-        # questi msg di answer non li aspetto quando li invio ma li aspetto nel metodo listening (algorithm.py)
-        # quando ricevo un pacchetto, se il tipo e ANSWER allora rispondo con un pacchetto adeguato
-            # ricevuto msg answer decremento la variabile globale checked_nodes ossia i nodi a cui ho inviato messaggio di elezione
-
-        # dopo aver decrementato controllo
-        # self.highernodes sara diverso da acknodes quindi il processo si aspetta un futuro messaggio di END perche qualcuno verra eletto
-        # questa attesa si modella con furtherwaiting (endwait potrei chiamarlo)
-
-        # VAI A FURTHERWAITING
-
-
 
     # fine di un'elezione
     def end(self, msg: dict):
@@ -172,29 +130,62 @@ class Bully(Algorithm):
         # processo si autoelegge coordinatore
         self.coordid = msg["id"]
         # dopo essersi eletto coordinatore invia coord msg a tutti i running process
-        self.coordmsg = True
+        self.coordmsg = True        # questo significa che viene ricevuto un messaggio di END
+            # coordmsg = True significa che il processo ha avviato un'elezione che ha portato a trovare un leader
         self.lock.release()
 
+
+    # metodo che gestisce la ricezione di un messaggio di risposta
+    # ricevuto answer msg si decrementa la variabile globale highernodes
+    def answer(self):
+        # lock management
+        self.lock.acquire()
+        self.highernodes -= 1
+        self.lock.release()
+
+    def endwait(self):
+        timeout = time.time() + constants.TOTAL_DELAY
+        # per un certo tempo si aspetta un messaggio END
+        while(time.time() < timeout):
+            self.lock.acquire()
+            # quando viene ricevuto (listening) si va in metodo end
+            if self.coordmsg == True:       # elezione finita, ricevuto messaggio END
+                self.participant = False
+                self.coordmsg = False
+                # imposto parametri a False per riutilizzarli alla prossima elezione
+                self.lock.release()
+                return 0
+            self.lock.release()
+        # se non si riceve nessun END si ritorna 1, quindi ritorna 1 anche il metodo lowest
+        # in questo caso l'if iniziale non si verifica e il processo si elegge coordinatore
+        self.lock.acquire()
+        self.participant = False
+        return 1
 
 
     # metodo che gestisce il processo di elezione
     def election(self, msg: dict):
         # lock management
         self.lock.acquire()
+        socket = helpers.create_socket(self.ip)
 
-            # che succede?
+        try:
+            socket.connect((msg["ip"], msg["port"]))
+            # quando si riceve un pacchetto ELECTION, si risponde con uno ANSWER
+            self.forwarding(msg, self.id, Type['ANSWER'], socket)
+        except ConnectionRefusedError:
+            pass
 
-        # quando ricevo pacchetto election rispondo con un answer
-        # se non sto partecipando (False) e io ho id piu grande di chi contatto, io devo far partire l'elezione
-        
+        socket.close()
 
+        if self.participant == False:
+            # se il processo non sta partecipando all'elezione
+            self.lock.release()
+            # significa che questo ha id più grande di chi contatta
+            # e quindi deve far partire l'elezione
+            self.start_election()
+            return
 
-
-    # metodo che gestisce la ricezione di un messaggio di risposta
-    def answer(self):
-        # lock management
-        self.lock.acquire()
-        self.highernodes -= 1
         self.lock.release()
 
 
@@ -203,7 +194,7 @@ class Bully(Algorithm):
         # c'è un delay se viene specificato con flag da linea di comando
         helpers.delay(self.delay, constants.HEARTBEAT_TIME)
 
-        destination = (node["ip"], node["port"])
+        destination = (nodes["ip"], nodes["port"])
         msg = helpers.message(id, type.value, self.port, self.ip)
         verbose.logging_tx(self.verb, self.logging, destination, (self.ip, self.port), self.id, eval(msg.decode('utf-8')))
 
