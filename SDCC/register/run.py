@@ -17,12 +17,12 @@ def run():
     if not(args.config_file):
         parser.error("No json file passed")
 
-    os.system("clear")
+    os.system("cls")
 
-    print(pyfiglet.figlet_format("REGISTER"))
+    print(pyfiglet.figlet_format("REGISTER", font = "digital"))
 
     # chiamo oggetto Register con argomenti verbose e config_file ottenuti dal parser
-    register = Register(args.verbose, args.config_file)
+    register = Register(args.verbose, args.config_file, False)
     # chiamata ai metodi receive e send definiti nel main
     register.receive()
     register.send()

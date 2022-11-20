@@ -7,7 +7,7 @@ from . import verbose as verbose
 import sys
 import os
 from . import helpers as helpers
-from .constants import LISTENING, TOTAL_DELAY, BUFF_SIZE, HEARTBEAT_TIME, DEFAULT_ID
+from . import constants as constants
 from abc import ABC, abstractmethod
 from threading import Thread, Lock
 
@@ -101,7 +101,7 @@ class Algorithm (ABC):
             self.lock.acquire()
 
             if self.coordid == self.id:
-                self.socket.settimeout(LISTENING)
+                self.socket.settimeout(constants.LISTENING)
             else:
                 self.socket.settimeout(None)
             self.lock.release()
@@ -114,7 +114,7 @@ class Algorithm (ABC):
                 os._exit(1)
 
             try:
-                data = connection.recv(BUFF_SIZE)
+                data = connection.recv(constants.BUFF_SIZE)
             except ConnectionResetError:
                 continue
 
@@ -129,7 +129,7 @@ class Algorithm (ABC):
             # messaggio di tipo 3
             if data["type"] == Type['HEARTBEAT'].value:
 
-                helpers.delay(self.delay, TOTAL_DELAY)
+                helpers.delay(self.delay, constants.TOTAL_DELAY)
 
                 msg = helpers.message(
                     self.id, Type['ACK'].value, self.port, self.ip)
@@ -170,12 +170,12 @@ class Algorithm (ABC):
             hb_sock = helpers.create_socket(self.ip)
             address = hb_sock.getsockname()
 
-            time.sleep(HEARTBEAT_TIME)
+            time.sleep(constants.HEARTBEAT_TIME)
             self.lock.acquire()
 
             # finché c'è un'elezione in corso non si mandano messaggi di heartbeat
             # inoltre il coordinatore non può mandare messaggi di heartbeat
-            if self.participant or (self.coordid in [self.id, DEFAULT_ID]):
+            if self.participant or (self.coordid in [self.id, constants.DEFAULT_ID]):
                 self.lock.release()
                 continue
 
@@ -192,12 +192,12 @@ class Algorithm (ABC):
                 hb_sock.connect(destination)
                 hb_sock.send(msg)
                 verbose.logging_tx(self.verb, self.logging, destination, (self.ip, self.port), self.id, eval(msg.decode('utf-8')))
-                self.receive_ack(hb_sock, destination, TOTAL_DELAY)
+                self.receive_ack(hb_sock, destination, constants.TOTAL_DELAY)
 
             # il coordinatore crasha
             except ConnectionRefusedError:
                 hb_sock.close()
-                #self.coordid = DEFAULT_ID   # conseguenza: nuova elezione
+                #self.coordid = constants.DEFAULT_ID   # conseguenza: nuova elezione
                 self.crash()
 
 
@@ -207,7 +207,7 @@ class Algorithm (ABC):
         sock.settimeout(waiting)
 
         try:
-            data = sock.recv(BUFF_SIZE)
+            data = sock.recv(constants.BUFF_SIZE)
         except (socket.timeout, ConnectionResetError):
             sock.close()
             self.crash()

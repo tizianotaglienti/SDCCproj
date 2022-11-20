@@ -26,7 +26,7 @@ class Tests:
 
         signal.signal(signal.SIGTERM, self.handler)
 
-        thread_register = Thread(target=self.generate_register)
+        thread_register = Thread(target = self.generate_register)
         thread_register.daemon = True
         thread_register.start()
 
@@ -55,7 +55,6 @@ class Tests:
 
         time.sleep(nodeconstants.HEARTBEAT_TIME * TEST_DURATION)
 
-        #self.utils.end(port, self.nodes)
         self.logging.debug("Test finished\n")
 
     # test che descrive il fallimento del nodo coordinatore
@@ -70,7 +69,6 @@ class Tests:
 
         time.sleep(nodeconstants.HEARTBEAT_TIME * TEST_DURATION)
 
-        #self.utils.end(port, self.nodes)
         self.logging.debug("Test finished\n")
 
     # test che descrive il fallimento di un nodo qualsiasi e il coordinatore
@@ -88,10 +86,8 @@ class Tests:
         self.utils.nodekill(port)
         print("\nNODE {} KILLED\n\n".format(self.nodes[index]["id"]))
 
-
         time.sleep(nodeconstants.HEARTBEAT_TIME * TEST_DURATION)
 
-        #self.utils.end(port, self.nodes)
         self.logging.debug("Test finished\n")
 
     def generate_register(self):
@@ -111,25 +107,20 @@ class Utils:
     def __init__(self):
         pass
 
+
     def nodegen(self, verbose: bool, algo: bool, delay: bool):
         node = Node(verbose, algo, "./config.json", delay)
         node.start()
 
+    # interruzione di un processo in ascolto su una specifica porta tcp
     def nodekill(self, port: int):
         for node in psutil.process_iter():
-            for connections in node.connections(kind='inet'):
+            for connections in node.connections(kind = 'inet'):
                 if connections.laddr.port == port:
                     try:
                         node.send_signal(signal.SIGTERM)
                     except psutil.NoSuchProcess:
                         pass
-
-    def end(self, port: int, nodes: list):
-        for index in range(len(nodes) - 1):
-            numport = nodes[index]["port"]
-            if numport == port:
-                continue
-            self.nodekill(numport)
 
     def set_logging(self) -> logging:
         # configurazione logging specificando:
@@ -139,7 +130,7 @@ class Utils:
         logging.basicConfig(
             level=logging.DEBUG,
             format="[%(levelname)s] %(asctime)s\n%(message)s",
-            datefmt='%b-%d-%y %I:%M:%S'
+            datefmt='%I:%M:%S'
         )
         return logging
 

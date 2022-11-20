@@ -4,7 +4,6 @@ import tests as tests
 
 INVALID_OUT = "Wrong Input!"
 
-
 def test_any(test):
     test.test_any()
 
@@ -20,8 +19,7 @@ def test_both(test):
 def run():
 
     os.system("cls")
-    intro = pyfiglet.figlet_format("TEST", font = "smkeyboard")
-    print(intro)
+    print(pyfiglet.figlet_format("TEST", font = "digital"))
 
     algorithm = True    # bully
     nodes = 4

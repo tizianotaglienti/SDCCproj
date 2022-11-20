@@ -24,14 +24,13 @@ def run():
     if not (args.config_file):
         parser.error('No json file passed')
 
-    os.system("clear")
-    intro = pyfiglet.figlet_format("NODE")
+    os.system("cls")
+    print(pyfiglet.figlet_format("NODE", font = "digital"))
 
     algorithm = False
     if args.algorithm == "bully":
         algorithm = True
 
-    # in local "../config.json"
     node = Node(args.verbose, algorithm, args.config_file, args.delay)
     node.start()
 
