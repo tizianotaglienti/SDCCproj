@@ -13,7 +13,6 @@ from register.src import constants as regconstants
 
 TEST_DURATION = 5
 
-
 class Tests:
 
     def __init__(self, nodes: int, algo: bool):

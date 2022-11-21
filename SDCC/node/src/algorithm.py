@@ -24,8 +24,6 @@ class Type(Enum):
     HEARTBEAT = 3
     REGISTER = 4
     ACK = 5
-    #FIRSTCOORD = 6
-    # flag elected che si invia solo al nodo con id più alto per essere eletto insieme alla registrazione
 
 class Algorithm (ABC):
 
@@ -182,11 +180,9 @@ class Algorithm (ABC):
             index = helpers.get_index(self.coordid, self.nodes)
             info = self.nodes[index]
 
-            msg = helpers.message(
-                self.id, Type['HEARTBEAT'].value, address[1], address[0])
+            msg = helpers.message(self.id, Type['HEARTBEAT'].value, address[1], address[0])
 
             destination = (info["ip"], info["port"])
-
 
             try:
                 hb_sock.connect(destination)

@@ -46,9 +46,9 @@ def run():
             continue
 
         if op == 5:
-            nodes = int(input("Enter new number of nodes:\n"))
+            nodes = int(input("\nEnter new number of nodes:\n"))
             if nodes < 4:
-                print("Error: invalid number of nodes! (must be 4 or more)\nIt's going to be set equal to 4\n")
+                print("\nError: invalid number of nodes! (must be 4 or more)\nIt's going to be set equal to 4\n")
                 nodes = 4
             continue
 
