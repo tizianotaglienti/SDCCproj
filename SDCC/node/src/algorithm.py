@@ -13,11 +13,7 @@ from threading import Thread, Lock
 
 
 class Type(Enum):
-
-    """
-    Class contains message types exchanged in Bully and Ring-based algorithm.
-    """
-
+    # tipi di messaggi scambiati durante gli algoritmi
     ELECTION = 0
     END = 1
     ANSWER = 2
@@ -48,7 +44,6 @@ class Algorithm (ABC):
         self.verb = verb
 
         sign.signal(sign.SIGTERM, self.handler)
-        #sign.signal(sign.SIGINT, self.handler)
 
         self.logging = verbose.set_logging()
 

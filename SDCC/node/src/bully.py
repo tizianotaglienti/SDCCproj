@@ -6,17 +6,21 @@ import socket
 import os
 from . import verbose as verbose
 
+# creazione classe Bully per l'esecuzione dell'algoritmo Bully
 class Bully(Algorithm):
-    """
-    In questo algoritmo si assume conoscenza e comunicazione completa tra processi.
-    Si inizia con un coordinatore e, quando questo crasha,
-        il primo processo che si accorge del fallimento fa partire un'elezione.
-    Questo processo invia un messaggio ai soli processi con id superiore al suo.
-    - se non riceve risposte si autoelegge coordinatore
-    - se riceve risposte si disinteressa e l'algoritmo prosegue dai nodi che hanno risposto
 
-    Complessivamente, i messaggi scambiati sono dei tipi: ELECTION, END, ANSWER, HEARBEAT, ACK.
-    """
+    # in questo algoritmo si assume conoscenza e comunicazione completa tra processi
+    #
+    # si inizia con un coordinatore e, quando questo crasha,
+    #     il primo processo che si accorge del fallimento fa partire un'elezione
+    #
+    # questo processo invia un messaggio ai soli processi con id superiore al suo:
+    # - se non riceve risposte si autoelegge coordinatore
+    # - se riceve risposte si disinteressa e l'algoritmo prosegue dai nodi che hanno risposto
+    #
+    # complessivamente, i messaggi scambiati sono dei tipi: ELECTION, END, ANSWER, HEARBEAT, ACK
+
+
     # inizializza gli attributi dell'oggetto
     def __init__(self, ip: str, port: int, id: int, nodes: list, socket: socket, verbose: bool, delay: bool, algo: bool, coordid: int):
         self.highernodes = 0
@@ -61,7 +65,7 @@ class Bully(Algorithm):
         # se non c'è nessuno nella rete si rimane in attesa infinita, per questo si crea la variabile close
         # close = True solo se risponde qualcuno, altrimenti si termina l'esecuzione
         if not close:
-            self.logging.debug("Node: (ip: {}, port: {}, id: {})\nEnds\n".format(self.ip, self.port, self.id))
+            self.logging.debug("Node: (ip: {}, port: {}, id: {})\nFinish\n".format(self.ip, self.port, self.id))
             self.socket.close()
             os._exit(1)
 
@@ -79,7 +83,7 @@ class Bully(Algorithm):
 
         exit = False
 
-        # il processo si connette e manda messaggio di tipo election a chi ha id superiore al suo
+        # il processo si connette e manda messaggio di tipo ELECTION a chi ha id superiore al suo
         for node in range (index, len(self.nodes)):
             socket = helpers.create_socket(self.ip)
             try:
@@ -202,22 +206,3 @@ class Bully(Algorithm):
             connection.send(msg)
         except ConnectionResetError:
             return
-
-
-
-    #### e questi a che servono????
-
-    #def low_id_node(self, index: int) -> int:
-
-    #def further_waiting(self):
-
-        # che succede in furtherwaiting?
-        # per un certo tempo (while su un tempo) mi aspetto un msg di end
-        # quando lo ricevo (lo vedo nella listening) vado a metodo end
-        # setto il coordid e il coordmsg (TRUE) cioe ho ricevuto un msg di end
-            # questo true significa che io ho avviato un'elezione che ha portato a un leader e che ora ho un leader
-
-        # questo sta a indicare che l'elezione e finita, poi lo setto a False, lo azzero perche mi servira per la prox elezione
-
-        # se non ho ricevuto nessun END ritorno 1 dal further wait, quindi ritorno 1 anche a low_id_node
-        # quindi in questo caso l'if con la freccetta non si verifica e io sono il coord

@@ -43,10 +43,10 @@
 
 \begin{document}
 
-\title{Distributed Systems and Cloud Computing \\ 
-B3 Project: Election Distributed Algorithms}
+\title{Sistemi Distribuiti e Cloud Computing
+Progetto B3: Algoritmi di elezione distribuita}
 
-\author{\IEEEauthorblockN{Tiziano Taglienti (0304926)}
+\author{\IEEEauthorblockN{Tiziano Taglienti - 0304926}
 \IEEEauthorblockA{\textit{Università degli studi di Roma "Tor vergata"}\\
 tiziano.taglienti@alumni.uniroma2.eu}
 }
@@ -64,14 +64,14 @@ Ring-based, Bully, TCP, Docker, AWS EC2, Ansible
 \end{IEEEkeywords}
 
 
-\section{Introduzione}
+\section{Introduzione}\label{sec:intro}
 Lo scopo del progetto è realizzare in Python un'applicazione distribuita che implementi gli algoritmi di elezione distribuita appena citati.
 Si utilizzano dei container \textbf{Docker} per creare una rete decentralizzata di nodi e si esegue l'applicazione su un'istanza \textbf{EC2 con AWS}.
 
 Nelle sezioni seguenti vengono descritti i servizi utilizzati dagli algoritmi, l'implementazione di questi ultimi e vengono discussi i test usati per valutare il funzionamento degli algoritmi.
 
 
-\section{Servizi}
+\section{Servizi}\label{sec:services}
 
 
 \subsection{Register}\label{register}
@@ -86,7 +86,7 @@ In seguito si stabilisce un coordinatore, cioè il processo che ha l'identificat
 Durante la registrazione un nodo genera due socket: una viene usata per comunicare con il nodo register e l'altra serve per la ricezione di pacchetti da altri processi.
 
 
-\subsection{Heartbeat}
+\subsection{Heartbeat}\label{heartbeat}
 
 Il servizio di \textbf{heartbeat} ha come scopo principale quello di rilevare i crash e i fallimenti del coordinatore.
 
@@ -96,6 +96,36 @@ I messaggi di heartbeat vengono inviati periodicamente in base al valore di \tex
 
 Un coordinatore che non è fallito risponde ai messaggi di heartbeat con dei messaggi di acknowledgement.
 
+\begin{lstlisting}
+def heartbeat(self):
+    while True:
+        ...
+        self.lock.acquire()
+
+        if self.participant or (self.coordid in [self.id, constants.DEFAULT_ID]):
+            self.lock.release()
+            continue
+
+        index = helpers.get_index(self.coordid, self.nodes)
+        info = self.nodes[index]
+
+        msg = helpers.message(self.id, Type['HEARTBEAT'].value, address[1], address[0])
+
+        destination = (info["ip"], info["port"])
+
+        try:
+            hb_sock.connect(destination)
+            hb_sock.send(msg)
+            verbose.logging_tx(self.verb, self.logging, destination, (self.ip, self.port), self.id, eval(msg.decode('utf-8')))
+            self.receive_ack(hb_sock, destination, constants.TOTAL_DELAY)
+        # coord crash
+        except ConnectionRefusedError:
+            hb_sock.close()
+            self.crash()
+\end{lstlisting}
+
+All'inizio di questo metodo è mostrato il modo in cui si definisce un lock per gestire le risorse condivise, dal momento che molti dati possono essere acceduti contemporaneamente da più thread.
+
 \begin{figure}[htbp]
   \centering
   \includesvg[inkscapelatex=false, width = 245pt]{heartbeat.svg}
@@ -103,7 +133,7 @@ Un coordinatore che non è fallito risponde ai messaggi di heartbeat con dei mes
 \end{figure}
 
 
-\subsection{Verbose}
+\subsection{Verbose}\label{verbose}
 
 Questo servizio consente di mostrare tutti i messaggi scambiati tra i processi, indicandone alcune informazioni, quali:
 \begin{itemize}
@@ -118,30 +148,43 @@ Per offrire un'esecuzione \textbf{verbose} si specifica il flag \textit{-v} da l
 
 \subsection{Delay}\label{delay}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Per provare il sistema in condizioni di maggiore stress, come richiesto nella specifica, è stato incluso un parametro \textit{delay} durante l'invio dei messaggi.
+Questo viene chiamato nell'omonimo metodo \textbf{delay} definito nel file \textit{helpers}, in entrambi gli algoritmi, durante la fase di forwarding.
+Il metodo consiste nella generazione di un tempo di attesa da parte del mittente per spedire il pacchetto, il cui valore viene impostato da linea di comando attraverso il flag \textit{-d}.
+Una possibile conseguenza è la scadenza del timeout del destinatario, che può dedurre un crash del processo da cui aspettava un pacchetto.
 
-To stress more the system, the \textbf{delay method} is introduced in \textit{SDCC/sdcc/node/src/helper.py}. It generates a period waited by the sender to forward the current packet. This may cause the receiver timeout to expire.
+
+\section{Algoritmi}\label{sec:algo}
+
+
+\subsection{Classi Algorithm e Type}\label{algorithm}
+
+L'implementazione degli algoritmi si realizza attraverso una classe astratta \textit{Algorithm}, definita nell'omonimo file ed estesa dai due algoritmi di elezione distribuita.
+Le classi che estendono \textit{Algorithm} devono fare override di tutti i metodi della classe di base, contrassegnati dal decoratore \textit{@abstractmethod}, quali:
+
 \begin{lstlisting}
-def delay(flag: bool, ub: int):
-    if flag:
-        delay = randint(0, floor(ub*1.5))
-        time.sleep(delay)
+@abstractmethod
+def start_election(self):
+    pass
+
+@abstractmethod
+def answer(self):
+    pass
+
+@abstractmethod
+def end(self, msg: dict):
+    pass
+
+@abstractmethod
+def election(self, msg: dict):
+    pass
+
+@abstractmethod
+def forwarding(self):
+    pass
 \end{lstlisting}
-It is activated by default when tests are performed (see. \ref{sec:tests}), but is also configured by the command line through the \textit{-d} flag.
 
-\section{Algorithm Implementation}
-
-What follows does not describe how the algorithms work, but only how particular aspects are implemented (reference at \cite{coulouris2005distributed}).
-
-The implementation consists of the abstract class \footnote{Defined in \textit{SDCC/sdcc/node/src/Algorithm.py}} and election distributed algorithms classes that extend the first one. 
-
-\begin{figure}[htbp]
-  \centering
-  \includesvg[inkscapelatex=false, width = 245pt]{class.svg}
-  \caption{Logic implementation of the classes.}
-\end{figure}
-
-Six types of messages can be exchanged between nodes:
+Nel file \textit{algorithm} sono indicati anche i sei tipi di messaggio che sono scambiabili tra i processi:
 
 \begin{lstlisting}
 class Type(Enum):
@@ -152,34 +195,40 @@ class Type(Enum):
     REGISTER = 4
     ACK = 5
 \end{lstlisting}
-ANSWER type is used only by the \textbf{Bully algorithm}, whereas REGISTER is sent during register phase.
 
-Both algorithms begin with run the listening thread after which they start an election. Only after completing these two phases, the heartbeat can start. 
+dove ANSWER è utilizzato solo nell'algoritmo \textbf{Bully}, e REGISTER solo durante la fase iniziale di registrazione.
+
+
+\subsection{Inizializzazione}\label{init}
+
+Entrambi gli algoritmi inizializzano un listening thread prima ancora di avviare l'elezione. Essendo un'operazione comune a entrambi, si trova nella classe astratta:
+
 \begin{lstlisting}
 def __init__(self, ...):
         ...
-        self.lock = Lock()
         
-        thread = Thread(target=self.listening)
+        thread = Thread(target = self.listening)
         thread.daemon = True
         thread.start()
 
-        self.start_election()
         Algorithm.heartbeat(self)
 \end{lstlisting}
-Many data are accessed simultaneously from multiple threads, thus a \textbf{lock} is defined to manage shared resources.
-\begin{lstlisting}
-self.lock.acquire()
-if self.participant or (self.coordinator in [self.id, DEFAULT_ID]):
-    self.lock.release()
-    continue
-\end{lstlisting}\caption{Example of \textbf{lock} management in heartbeat method.}
 
-\subsection{Chang and Roberts Algorithm}\label{ring}
+Un processo è già eletto coordinatore alla fine della fase di register, quindi l'algoritmo inizia con i processi che inviano messaggi di heartbeat al coordinatore, attendendo ACK.
 
-The algorithm is suitable for a collection of processes arranged in a logical ring. Each process has a
-communication channel to the next one in the ring. All messages
-are sent clockwise around the ring. The ID's node is used to define the \textbf{ring network}: the next node is the one with the greatest ID then current and the lowest among others.
+
+\subsection{Chang-Roberts}\label{ring}
+
+In questo caso, la topologia della rete è un anello orientato dove i messaggi sono inviati in senso orario.
+Ogni processo conosce l'id degli altri e possiede un canale di comunicazione per il prossimo nodo dell'anello, quello con identificatore immediatamente maggiore del proprio.\\
+
+L'algoritmo inizia con un coordinatore già stabilito e con gli altri nodi che gli mandano messaggi di heartbeat.
+Quando il coordinatore va in crash inizia una nuova elezione, con l'invio di messaggi di tipo 0 (attraverso forwarding in senso orario) che contengono l'identificatore maggiore tra il proprio e quello indicato nel messaggio ricevuto. Quando questi due identificatori sono uguali, il ricevente si autoelegge coordinatore e invia messaggi di tipo 1 per concludere l'elezione.
+
+Per quanto riguarda il metodo \textit{forwarding}, innanzitutto si sceglie il processo successivo nell'anello accedendo al dizionario creato alla fine della registrazione, ordinato in base all'identificatore in maniera crescente.
+Fatto questo, ci si connette a quel nodo e si invia l'opportuno messaggio.
+
+Quando ci si accorge di un fallimento del coordinatore (crash o scadenza di un timer associato all'heartbeat), si rimuove dalla lista dei nodi, così che gli altri non possano più interagire con lui.
 
 \begin{figure}[htbp]
   \centering
@@ -187,11 +236,17 @@ are sent clockwise around the ring. The ID's node is used to define the \textbf{
   \caption{Election started by node with \textit{id=23} in Ring topology.}
 \end{figure}
 
-When a leader crash occurs or the node's timer associated with a heartbeat message elapses, the leader is removed from the nodes list, therefore remaining nodes can not interact with it even if it is still active.  
 
-\subsection{Bully Algorithm}
+\subsection{Bully}\label{bully}
 
-With different respect to the \textbf{Ring-based algorithm}, the \textbf{Bully algorithm} assumes that each process knows which processes have higher identifiers and that it can communicate with all such processes. That information is sent by the register node (as described in \ref{register}) 
+A differenza del caso precedente, ora si assume conoscenza e comunicazione completa tra i processi.
+Si inizia sempre con un coordinatore e, quando questo crasha, il primo processo che si accorge del fallimento indice un'elezione.
+
+L'elezione funziona in modo diverso: il nodo che l'ha ordinata manda un messaggio di tipo 0 ai soli processi con id maggiore del suo, aspettando risposte (messaggi ANSWER).
+Se ne riceve almeno una, si disinteressa dell'elezione e l'algoritmo prosegue dai nodi che hanno risposto, altrimenti procede ad autoeleggersi coordinatore.
+Nell'ultimo caso il processo invia a tutti i processi vivi dei pacchetti END.
+
+In questo algoritmo, un timeout riguardante il coordinatore o un suo crash non porta alla rimozione del nodo dalla lista, poiché il fallimento non ha effetti sulla topologia della rete.
 
 \begin{figure}[htbp]
   \centering
@@ -199,18 +254,8 @@ With different respect to the \textbf{Ring-based algorithm}, the \textbf{Bully a
   \caption{Election started by node with \textit{id=23} using \textbf{Bully algorithm}.}
 \end{figure}
 
-\subsubsection{Scenarios}
 
-Unlike in the \ref{ring}, for the \textbf{Bully algorithm}, the current leader is not removed from the nodes list during leader crash or timeout scenarios.
-
-The considered cases when the leader is executing are:  
-
-\begin{enumerate}
-    \item If the leader delays sending the ACK packet, other nodes start a new election that will produce the next coordinator also if the previous one is running\footnote{In the next election it will be elected again.}.
-    \item If the leader is stopped\footnote{Using $Ctrl\ +\ z$ combination.} a new election will start. In the meanwhile all messages sent to the sleeping node are queued, so when it wakes up\footnote{Using \textit{fg} command.} will receive those messages and begin the leader again.
-\end{enumerate}
-
-\section{Tests}\label{sec:tests}
+\section{Test}\label{sec:tests}
 
 Per provare il funzionamento degli algoritmi implementati sono stati eseguiti tre tipi di test:
 
@@ -237,7 +282,7 @@ def nodekill(self, port: int):
 
 Per quanto riguarda l'esecuzione dei test, questa avviene in maniera interattiva: l'utente può decidere quale tipo di test eseguire, quale algoritmo utilizzare e il numero di processi che vengono creati (partendo da un minimo di quattro).
 
-%%%%%%%%%%%%%%%%%%%%%%R
+%%%%%%%%%%%%%%%%%%%%%%-------------------------\
 \section{Deployment}
 
 The network is deployed on an \textbf{AWS EC2} instance where every node runs on a \textbf{Docker} container. 
@@ -285,7 +330,7 @@ The complete list of commands is available \href{https://github.com/matt-merman/
 \includegraphics[width=\linewidth]{figure/aws_demo.png}
 \caption{\textbf{Docker}, \textbf{Docker Compose} and application code info on an \textbf{AWS EC2} instance.}
 \end{figure}
-
+INSERIRE SCREEN DI CMD PER QUALCOSA----------------------------------------------------------/
 \printbibliography
 
 \end{document}

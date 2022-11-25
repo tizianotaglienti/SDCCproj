@@ -9,16 +9,16 @@ import socket
 # creazione classe ChangRoberts per l'esecuzione dell'algoritmo ring-based per l'elezione
 class ChangRoberts(Algorithm):
 
-    """
-    La topologia è quella di un anello orientato dove i messaggi sono inviati in senso orario.
-    Ogni processo conosce l'id degli altri (non anonymous) e manda il proprio id al nodo successivo nell'anello.
-    Quando si riceve un messaggio:
-    - se l'id ricevuto è maggiore del proprio -> si inoltra lo stesso messaggio
-    - se l'id è uguale al proprio -> il ricevente elegge se stesso come coordinatore
-    - se l'id è minore del proprio -> il messaggio viene ignorato e il ricevente manda il suo id al nodo successivo
+    # topologia di un anello orientato dove i messaggi sono inviati in senso orario
+    # ogni processo conosce l'id degli altri (non anonymous) e manda il proprio id al nodo successivo nell'anello
+    #
+    # quando si riceve un messaggio:
+    # - se l'id ricevuto è maggiore del proprio -> si inoltra lo stesso messaggio
+    # - se l'id è uguale al proprio -> il ricevente elegge se stesso come coordinatore
+    # - se l'id è minore del proprio -> il messaggio viene ignorato e il ricevente manda il suo id al nodo successivo
+    #
+    # complessivamente, i messaggi scambiati sono dei tipi: ELECTION, END, HEARTBEAT, ACK
 
-    Complessivamente, i messaggi scambiati sono dei tipi: ELECTION, END, HEARTBEAT, ACK.
-    """
 
     # inizializza gli attributi dell'oggetto
     def __init__(self, ip: str, port: int, id: int, nodes: list, socket: socket, verbose: bool, delay: bool, algorithm: bool, coordid: int):
@@ -65,7 +65,7 @@ class ChangRoberts(Algorithm):
         self.lock.release()
 
 
-    # metodo che gestisce il processo di elezione
+    # metodo che gestisce la ricezione di messaggi di tipo 0
     def election(self, msg: dict):
         # lock management
         self.lock.acquire()
