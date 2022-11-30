@@ -2,7 +2,7 @@
 
 ## Specifica
 
-Lo scopo del progetto è realizzare in \textbf{Python} un'applicazione distribuita che implementi gli algoritmi di elezione distribuita (Bully e Chang-Roberts).
+Lo scopo del progetto è realizzare in Python un'applicazione distribuita che implementi gli algoritmi di elezione distribuita (Bully e Chang-Roberts).
 Inoltre si implementano i servizi di Register e Heartbeat, oltre alle funzionalità di Verbose e Delay, utilizzabile tramite appositi flag da linea di comando.
 
 ## Esecuzione
