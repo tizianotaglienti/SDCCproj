@@ -29,7 +29,7 @@ class Tests:
         thread_register.daemon = True
         thread_register.start()
 
-        time.sleep(regconstants.SOCK_TIMEOUT/3)
+        time.sleep(regconstants.REG_TIMEOUT/3)
 
         for _ in range(self.nodenumber):
             process = Process(target = self.utils.nodegen, args = (self.verbose, algo, True))
@@ -44,7 +44,7 @@ class Tests:
     # test che descrive il fallimento di un nodo qualsiasi
     def test_any(self):
 
-        time.sleep(nodeconstants.HEARTBEAT_TIME * TEST_DURATION)
+        time.sleep(nodeconstants.HB_TIME * TEST_DURATION)
 
         index = randint(0, self.nodenumber - 2)
         port = self.nodes[index]["port"]
@@ -52,27 +52,27 @@ class Tests:
 
         print("\nNODE {} KILLED\n\n".format(self.nodes[index]["id"]))
 
-        time.sleep(nodeconstants.HEARTBEAT_TIME * TEST_DURATION)
+        time.sleep(nodeconstants.HB_TIME * TEST_DURATION)
 
         self.logging.debug("Test finished\n")
 
     # test che descrive il fallimento del nodo coordinatore
     def test_coord(self):
 
-        time.sleep(nodeconstants.HEARTBEAT_TIME * TEST_DURATION)
+        time.sleep(nodeconstants.HB_TIME * TEST_DURATION)
 
         port = self.nodes[-1]["port"]
         self.utils.nodekill(port)
         print("\nNODE {} KILLED\n\n".format(self.nodes[-1]["id"]))
 
-        time.sleep(nodeconstants.HEARTBEAT_TIME * TEST_DURATION)
+        time.sleep(nodeconstants.HB_TIME * TEST_DURATION)
 
         self.logging.debug("Test finished\n")
 
     # test che descrive il fallimento di un nodo qualsiasi e il coordinatore
     def test_both(self):
 
-        time.sleep(nodeconstants.HEARTBEAT_TIME * TEST_DURATION)
+        time.sleep(nodeconstants.HB_TIME * TEST_DURATION)
 
         port = self.nodes[-1]["port"]
         self.utils.nodekill(port)
@@ -84,7 +84,7 @@ class Tests:
         self.utils.nodekill(port)
         print("\nNODE {} KILLED\n\n".format(self.nodes[index]["id"]))
 
-        time.sleep(nodeconstants.HEARTBEAT_TIME * TEST_DURATION)
+        time.sleep(nodeconstants.HB_TIME * TEST_DURATION)
 
         self.logging.debug("Test finished\n")
 
