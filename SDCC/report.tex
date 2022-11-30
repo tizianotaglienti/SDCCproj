@@ -1,7 +1,6 @@
 \documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
-\usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{algorithmic}
 \usepackage{graphicx}
@@ -9,7 +8,7 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{svg}
-\svgpath{{./figure/}}
+\svgpath{{C:/Users/Titti/Desktop/PROGETTO/SDCCproj/SDCC/screen}}
 
 \usepackage{listings}
 \usepackage{color}
@@ -34,6 +33,7 @@
   breakatwhitespace=true,
   tabsize=3
 }
+
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -83,6 +83,12 @@ La socket rimane aperta per un tempo \textit{REG\_TIMEOUT}, al termine del quale
 L'attribuzione dell'identificatore univoco ai nodi avviene dopo la fase di registrazione (inizialmente ogni nodo ha identificatore pari a \textit{DEFAULT\_ID}.
 In seguito si stabilisce un coordinatore, cioè il processo che ha l'identificatore più grande. Per farlo, la variabile \textit{coordid} prende il valore dell'identificatore dell'ultimo nodo della lista e, con un messaggio di livello \textit{DEBUG}, questo valore viene stampato a schermo.
 
+\begin{figure}[htbp]
+  \centering
+  \includesvg[inkscapelatex=false, width = 245pt]{register.svg}
+  \caption{Risposta del nodo register e scelta del primo coordinatore.}
+\end{figure}
+
 Durante la registrazione un nodo genera due socket: una viene usata per comunicare con il nodo register e l'altra serve per la ricezione di pacchetti da altri processi.
 
 
@@ -129,7 +135,7 @@ All'inizio di questo metodo è mostrato il modo in cui si definisce un lock per 
 \begin{figure}[htbp]
   \centering
   \includesvg[inkscapelatex=false, width = 245pt]{heartbeat.svg}
-  \caption{Heartbeat service invoked by two nodes.}
+  \caption{Servizio di heartbeat appena finita la registrazione.}
 \end{figure}
 
 
@@ -202,6 +208,12 @@ class Type(Enum):
 
 dove ANSWER è utilizzato solo nell'algoritmo \textbf{Bully}, e REGISTER solo durante la fase iniziale di registrazione.
 
+\begin{figure}[htbp]
+  \centering
+  \includesvg[inkscapelatex=false, width = 245pt]{answer.svg}
+  \caption{Bully - Inizio di una nuova elezione con scambi di messaggi di tipo 2.}
+\end{figure}
+
 
 \subsection{Inizializzazione}\label{init}
 
@@ -234,12 +246,6 @@ Fatto questo, ci si connette a quel nodo e si invia il messaggio.
 
 Quando ci si accorge di un fallimento del coordinatore (crash o scadenza di un timer associato all'heartbeat), si rimuove dalla lista dei nodi, così che gli altri non possano più interagire con lui.
 
-\begin{figure}[htbp]
-  \centering
-  \includesvg[inkscapelatex=false, width = 245pt]{ring_1.svg}
-  \caption{Election started by node with \textit{id=23} in Ring topology.}
-\end{figure}
-
 
 \subsection{Bully}\label{bully}
 
@@ -251,12 +257,6 @@ Se ne riceve almeno una, si disinteressa dell'elezione e l'algoritmo prosegue da
 Nell'ultimo caso il processo invia a tutti i processi vivi dei pacchetti END.
 
 In questo algoritmo, un timeout riguardante il coordinatore o un suo crash non porta alla rimozione del nodo dalla lista, poiché il fallimento non ha effetti sulla topologia della rete.
-
-\begin{figure}[htbp]
-  \centering
-  \includesvg[inkscapelatex=false, width = 245pt]{bully_1.svg}
-  \caption{Election started by node with \textit{id=23} using \textbf{Bully algorithm}.}
-\end{figure}
 
 
 \section{Test}\label{sec:tests}
@@ -287,6 +287,26 @@ def nodekill(self, port: int):
 
 Per quanto riguarda l'esecuzione dei test, questa avviene in maniera interattiva: l'utente può decidere quale tipo di test eseguire, quale algoritmo utilizzare e il numero di processi che vengono creati (partendo da un minimo di quattro).
 
+\begin{figure}[htbp]
+  \centering
+  \includesvg[inkscapelatex=false, width = 245pt]{consoletest.svg}
+  \caption{Console di avvio di \textit{test_ex}.}
+\end{figure}
+
+Nelle figure seguenti si mostra come da questa console iniziale sia possibile fare diverse operazioni, come cambiare il numero di nodi o l'algoritmo usato
+
+\begin{figure}[htbp]
+  \centering
+  \includesvg[inkscapelatex=false, width = 245pt]{test45.svg}
+\end{figure}
+
+oppure eseguire un test (di tipo \textit{test\_both} in figura):
+
+\begin{figure}[htbp]
+  \centering
+  \includesvg[inkscapelatex=false, width = 245pt]{test3finish.svg}
+\end{figure}
+
 
 \section{Esecuzione}
 
@@ -301,51 +321,13 @@ Nel primo caso, basta l'esecuzione da linea di comando con gli appositi flag, sf
 Invece nel secondo caso, il programma viene sviluppato su un'istanza \textbf{EC2 con AWS}, dove ogni nodo viene eseguito su un container \textbf{Docker}.
 Successivamente si sfrutta \textbf{Docker Compose}: tramite il file \textit{docker-compose.yml} si può utilizzare un singolo comando per creare e avviare tutti i servizi necessari, creando una rete privata all'interno della quale i container possono comunicare tra di loro.
 
-\begin{figure}[htbp]\label{fig:arch}
-  \centering
-  \includesvg[inkscapelatex=false, width = 245pt]{arch.svg}
-  \caption{Deployment using \textbf{AWS EC2} instance and \textbf{Docker} containers.}
-\end{figure}
 
-
-\section{Running Examples}
-
-\begin{figure}[htb]\label{fig:register}
-\includegraphics[width=\linewidth]{figure/register_terminal.png}
-\caption{Register phase from three generic nodes and register node.}
-\end{figure}
-
-\begin{figure}[htb]\label{fig:verbose}
-\includegraphics[width=\linewidth]{figure/verbose.png}
-\caption{Example of the message showed by register node.}
-\end{figure}
-
-\begin{figure}[htb]\label{fig:tests}
-\includegraphics[width=\linewidth]{figure/tests.png}
-\caption{User interface to tests execution}
-\end{figure}
-
-\begin{figure}[htb]\label{fig:aws}
-\includegraphics[width=\linewidth]{figure/aws_demo.png}
-\caption{\textbf{Docker}, \textbf{Docker Compose} and application code info on an \textbf{AWS EC2} instance.}
-\end{figure}
-\printbibliography
-
-% screen di: 
-		-no % verbose durante l'esecuzione (inquadrare DEBUG)
-		-% test quando eseguo (console principale) e cosa fanno i comandi
-		-% test finishing
-		-% fase di register (3 nodi che inviano richiesta al register che risponde (e basta, fino a qui))
-		-% fase di heartbeat (messaggi 3 5 3 5 3)
-		-% messaggio answer in bully (2)
-		-no % fase di election
 
 % per quanto riguarda aws (da mettere in "Esecuzione")
 		% installo docker, docker compose, migro il codice e faccio vedere che ho installato
 		% docker --version E docker-compose --version
 		% screen quando scrivo LL per far vedere che c'è la cartella mia!!!!!
 
-% :)
 
 
 
