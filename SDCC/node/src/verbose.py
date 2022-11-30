@@ -17,8 +17,9 @@ def logging_rx(flag: bool, logging: logging, receiver: tuple, sender: tuple, id:
         logging.debug("Process: (ip: {}, port: {}, id: {})\nFrom: (ip: {}, port: {})\nMessage: {}\n".format(receiver[0], receiver[1], id, sender[0], sender[1], data))
 
 def first_coordinator(flag: bool, logging: logging, id: int):
+    # comunica a tutti l'id del coordinatore alla fine della fase di registrazione (quello con identificatore più alto)
     if flag:
-        logging.debug("Process {} is the coordinator".format(id))
+        logging.debug("Process {} is the coordinator\n".format(id))
 
 def logging_tx(flag:bool, logging: logging, receiver: tuple, sender: tuple, id: int, data: list):
     if flag:

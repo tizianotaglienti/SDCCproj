@@ -1,19 +1,15 @@
 import json
 import sys
 from typing import Type
-
 from . import helpers as helpers
 from . import constants as constants
 from . import verbose as verbose
-
-from .changroberts import ChangRoberts, Type
+from .changroberts import ChangRoberts
 from .bully import Bully
-
 from .algorithm import Type
 
 
 # crea classe Node che registra il processo corrente alla rete e inizia un algoritmo tra i due definiti
-
 class Node:
 
     # inizializza gli attributi dell'oggetto
@@ -25,8 +21,8 @@ class Node:
         self.reg_port = config["register"]["port"]
         self.reg_ip = config["register"]["ip"]
 
-        self.algorithm = algorithm
         self.verbose = verbose
+        self.algorithm = algorithm
         self.delay = delay
 
         self.coordid = constants.DEFAULT_ID
@@ -54,7 +50,7 @@ class Node:
         try:
             temporary_socket.connect(destination)
         except ConnectionRefusedError:
-            print("Register node not available")
+            print("Register node not available\n")
             listening_socket.close()
             sys.exit(1)
 
@@ -65,7 +61,7 @@ class Node:
 
         if not data:
             listening_socket.close()
-            print("Register node crashed")
+            print("Register node crashed\n")
             sys.exit(1)
 
         msg = eval(data.decode('utf-8'))
@@ -79,7 +75,7 @@ class Node:
         # controlla se c'è un solo nodo
         if (len(msg) == 1):
             listening_socket.close()
-            print("Not enough nodes generated")
+            print("Not enough nodes generated\n")
             sys.exit(1)
 
         # si stabilisce subito un coordinatore
@@ -87,7 +83,7 @@ class Node:
         self.coordid = msg[-1]["id"]
         if (id == self.coordid):
             # debug
-            print("> I am the coordinator!")
+            print("\n> I am the coordinator!\n")
 
         # comunicazione a tutti i processi (debug)
         verbose.first_coordinator(self.verbose, logging, msg[-1]["id"])

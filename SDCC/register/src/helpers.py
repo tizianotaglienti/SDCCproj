@@ -1,10 +1,12 @@
-import json
 import logging
-import socket
 from random import randint
 from . import constants as constants
 
 def set_logging() -> logging:
+    # configurazione logging specificando:
+    # level: indica che tutti gli eventi al di sopra del livello DEBUG saranno registrati nel log
+    # format: specifica il formato del messaggio di log
+    # datefmt: usa lo stesso linguaggio di formattazione nel modulo datetime
     logging.basicConfig(
         level = logging.DEBUG,
         format = "[%(levelname)s] %(asctime)s\n%(message)s",

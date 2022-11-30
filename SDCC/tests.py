@@ -1,5 +1,5 @@
-import signal
-import psutil
+import signal as signal
+import psutil as psutil
 from register.src.main import Register
 from node.src.main import Node
 from threading import Thread
@@ -63,7 +63,6 @@ class Tests:
 
         port = self.nodes[-1]["port"]
         self.utils.nodekill(port)
-
         print("\nNODE {} KILLED\n\n".format(self.nodes[-1]["id"]))
 
         time.sleep(nodeconstants.HEARTBEAT_TIME * TEST_DURATION)
@@ -119,6 +118,8 @@ class Utils:
                     try:
                         node.send_signal(signal.SIGTERM)
                     except psutil.NoSuchProcess:
+                        pass
+                    except psutil.AccessDenied:
                         pass
 
     def set_logging(self) -> logging:

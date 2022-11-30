@@ -54,21 +54,21 @@ tiziano.taglienti@alumni.uniroma2.eu}
 \maketitle
 
 \begin{abstract}
-Gli algoritmi di elezione distribuita sono un'applicazione degli algoritmi di consenso distribuito, e hanno lo scopo di determinare un coordinatore in caso di crash del leader attuale.
+Gli algoritmi di elezione distribuita sono un'applicazione degli algoritmi di consenso distribuito, e hanno lo scopo di determinare un coordinatore in caso di crash del leader corrente.
 Questi funzionano se metà dei nodi rimangono funzionanti.
-In questo progetto vengono implementati l'algoritmo Bully e quello ring-based di Chang e Roberts.
+In questo progetto vengono implementati l'algoritmo Bully e quello Ring-based di Chang e Roberts.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Ring-based, Bully, TCP, Docker, AWS EC2, Ansible
+Ring-based, Bully, TCP, Docker, AWS, EC2, Python
 \end{IEEEkeywords}
 
 
 \section{Introduzione}\label{sec:intro}
-Lo scopo del progetto è realizzare in Python un'applicazione distribuita che implementi gli algoritmi di elezione distribuita appena citati.
+Lo scopo del progetto è realizzare in \textbf{Python} un'applicazione distribuita che implementi gli algoritmi di elezione distribuita appena citati nell'abstract.
 Si utilizzano dei container \textbf{Docker} per creare una rete decentralizzata di nodi e si esegue l'applicazione su un'istanza \textbf{EC2 con AWS}.
 
-Nelle sezioni seguenti vengono descritti i servizi utilizzati dagli algoritmi, l'implementazione di questi ultimi e vengono discussi i test usati per valutare il funzionamento degli algoritmi.
+Nelle sezioni seguenti vengono descritti i servizi e le funzioni degli algoritmi, l'implementazione di questi ultimi e vengono discussi i test usati per valutare il funzionamento degli algoritmi.
 
 
 \section{Servizi}\label{sec:services}
@@ -78,10 +78,10 @@ Nelle sezioni seguenti vengono descritti i servizi utilizzati dagli algoritmi, l
 
 Il servizio \textbf{register} è necessario per la memorizzazione di tutti i processi che costituiscono la rete, associando un identificatore univoco a ognuno di essi.
 
-Il server si comporta come una listening socket sulla porta TCP numero 1234 (vedi \textit{config.json}, in grado di accettare connessioni.
-La socket rimane aperta per un tempo \textit{SOCK\_TIMEOUT}, al termine del quale viene inviata a tutti i processi una lista dei nodi nella rete, ordinati per identificatore crescente.
+Il server si comporta come una listening socket sulla porta TCP numero 1234 (vedi \textit{config.json}), in grado di accettare connessioni.
+La socket rimane aperta per un tempo \textit{REG\_TIMEOUT}, al termine del quale viene inviata a tutti i processi una lista dei nodi nella rete, ordinati per identificatore crescente.
 L'attribuzione dell'identificatore univoco ai nodi avviene dopo la fase di registrazione (inizialmente ogni nodo ha identificatore pari a \textit{DEFAULT\_ID}.
-In seguito si stabilisce un coordinatore, cioè il processo che ha l'identificatore più grande. Per farlo, la variabile \textit{coordid} prende il valore dell'identificatore dell'ultimo nodo della lista e con un messaggio di livello \textit{DEBUG} viene comunicato a tutti i processi.
+In seguito si stabilisce un coordinatore, cioè il processo che ha l'identificatore più grande. Per farlo, la variabile \textit{coordid} prende il valore dell'identificatore dell'ultimo nodo della lista e, con un messaggio di livello \textit{DEBUG}, questo valore viene stampato a schermo.
 
 Durante la registrazione un nodo genera due socket: una viene usata per comunicare con il nodo register e l'altra serve per la ricezione di pacchetti da altri processi.
 
@@ -92,7 +92,7 @@ Il servizio di \textbf{heartbeat} ha come scopo principale quello di rilevare i 
 
 Finché c'è un'elezione in corso non si mandano messaggi di heartbeat; inoltre il coordinatore non invia messaggi di questo tipo.
 I processi sfruttano questo servizio attraverso un thread che invia messaggi di heartbeat al coordinatore, attraverso una socket dedicata.
-I messaggi di heartbeat vengono inviati periodicamente in base al valore di \textit{HEARTBEAT\_TIME} e, dopo aver inviato il messaggio, il thread aspetta per un tempo \textit{TOTAL\_DELAY}, dopo il quale si va in crash, per poi iniziare una nuova elezione.
+I messaggi di heartbeat vengono inviati periodicamente in base al valore di \textit{HB\_TIME} e, dopo aver inviato il messaggio, il thread aspetta per un tempo \textit{TOTAL\_DELAY}, dopo il quale si va in crash, per poi iniziare una nuova elezione.
 
 Un coordinatore che non è fallito risponde ai messaggi di heartbeat con dei messaggi di acknowledgement.
 
@@ -133,9 +133,12 @@ All'inizio di questo metodo è mostrato il modo in cui si definisce un lock per 
 \end{figure}
 
 
+\section{Flag}\label{sec:flag}
+
+
 \subsection{Verbose}\label{verbose}
 
-Questo servizio consente di mostrare tutti i messaggi scambiati tra i processi, indicandone alcune informazioni, quali:
+Questa funzione consente di mostrare tutti i messaggi scambiati tra i processi, indicandone alcune informazioni, quali:
 \begin{itemize}
 	\item Timestamp del messaggio (in formato hh:mm:ss);
 	\item Caratteristiche del nodo (indirizzo IP, numero di porta, identificatore);
@@ -149,8 +152,9 @@ Per offrire un'esecuzione \textbf{verbose} si specifica il flag \textit{-v} da l
 \subsection{Delay}\label{delay}
 
 Per provare il sistema in condizioni di maggiore stress, come richiesto nella specifica, è stato incluso un parametro \textit{delay} durante l'invio dei messaggi.
-Questo viene chiamato nell'omonimo metodo \textbf{delay} definito nel file \textit{helpers}, in entrambi gli algoritmi, durante la fase di forwarding.
-Il metodo consiste nella generazione di un tempo di attesa da parte del mittente per spedire il pacchetto, il cui valore viene impostato da linea di comando attraverso il flag \textit{-d}.
+Il metodo corrispondente viene definito nel file \textit{helpers} e, in entrambi gli algoritmi, chiamato durante la fase di forwarding.
+Il metodo consiste nella generazione di un tempo di attesa da parte del mittente per spedire il pacchetto.
+Questa funzionalità è attivata automaticamente nei test.
 Una possibile conseguenza è la scadenza del timeout del destinatario, che può dedurre un crash del processo da cui aspettava un pacchetto.
 
 
@@ -184,7 +188,7 @@ def forwarding(self):
     pass
 \end{lstlisting}
 
-Nel file \textit{algorithm} sono indicati anche i sei tipi di messaggio che sono scambiabili tra i processi:
+Nel file \textit{algorithm} compare la classe \textit{Type}, in cui sono indicati i sei tipi di messaggio scambiati tra i nodi:
 
 \begin{lstlisting}
 class Type(Enum):
@@ -201,7 +205,7 @@ dove ANSWER è utilizzato solo nell'algoritmo \textbf{Bully}, e REGISTER solo du
 
 \subsection{Inizializzazione}\label{init}
 
-Entrambi gli algoritmi inizializzano un listening thread prima ancora di avviare l'elezione. Essendo un'operazione comune a entrambi, si trova nella classe astratta:
+Entrambi gli algoritmi inizializzano un listening thread prima ancora di avviare l'elezione. Essendo un'operazione comune a entrambi, si trova nella classe Algorithm:
 
 \begin{lstlisting}
 def __init__(self, ...):
@@ -214,19 +218,19 @@ def __init__(self, ...):
         Algorithm.heartbeat(self)
 \end{lstlisting}
 
-Un processo è già eletto coordinatore alla fine della fase di register, quindi l'algoritmo inizia con i processi che inviano messaggi di heartbeat al coordinatore, attendendo ACK.
+Un processo è già eletto coordinatore alla fine della fase di register, quindi l'algoritmo inizia con i processi che inviano da subito dei messaggi di heartbeat al coordinatore, attendendo ACK.
 
 
 \subsection{Chang-Roberts}\label{ring}
 
 In questo caso, la topologia della rete è un anello orientato dove i messaggi sono inviati in senso orario.
-Ogni processo conosce l'id degli altri e possiede un canale di comunicazione per il prossimo nodo dell'anello, quello con identificatore immediatamente maggiore del proprio.\\
+Ogni processo conosce l'id degli altri e possiede un canale di comunicazione per il prossimo nodo dell'anello, quello con identificatore immediatamente maggiore del proprio.
 
 L'algoritmo inizia con un coordinatore già stabilito e con gli altri nodi che gli mandano messaggi di heartbeat.
-Quando il coordinatore va in crash inizia una nuova elezione, con l'invio di messaggi di tipo 0 (attraverso forwarding in senso orario) che contengono l'identificatore maggiore tra il proprio e quello indicato nel messaggio ricevuto. Quando questi due identificatori sono uguali, il ricevente si autoelegge coordinatore e invia messaggi di tipo 1 per concludere l'elezione.
+Quando il coordinatore va in crash inizia una nuova elezione, con l'invio di messaggi di tipo 0 (attraverso forwarding in senso orario) che contengono l'identificatore maggiore tra il proprio e quello indicato nel messaggio ricevuto. Quando questi due identificatori sono uguali, il ricevente si autoelegge coordinatore e invia un messaggio di tipo 1 per concludere l'elezione.
 
 Per quanto riguarda il metodo \textit{forwarding}, innanzitutto si sceglie il processo successivo nell'anello accedendo al dizionario creato alla fine della registrazione, ordinato in base all'identificatore in maniera crescente.
-Fatto questo, ci si connette a quel nodo e si invia l'opportuno messaggio.
+Fatto questo, ci si connette a quel nodo e si invia il messaggio.
 
 Quando ci si accorge di un fallimento del coordinatore (crash o scadenza di un timer associato all'heartbeat), si rimuove dalla lista dei nodi, così che gli altri non possano più interagire con lui.
 
@@ -266,8 +270,7 @@ Per provare il funzionamento degli algoritmi implementati sono stati eseguiti tr
 \end{enumerate}
 
 In tutti i test, per interrompere un processo in ascolto su una specifica porta TCP si utilizza il metodo \textit{nodekill} della classe \textit{Utils}.
-In questo metodo si sfrutta la libreria \textit{psutil} per filtrare i processi e ordinarli, per poi successivamente inviare un segnale di terminazione del nodo che ascolta su una porta di cui si specifica il numero.
-N.B. Per fare ciò, bisogna avere i permessi di utente root, quindi è necessario eseguire cmd come amministratore.
+In questo metodo si sfrutta la libreria \textit{psutil} per filtrare i processi e ordinarli, per poi successivamente inviare un segnale di terminazione del nodo che ascolta su una porta di cui si specifica il numero. \footnote{Per fare ciò, bisogna avere i permessi di utente root, quindi è necessario eseguire cmd come amministratore.}
 
 \begin{lstlisting}
 def nodekill(self, port: int):
@@ -278,17 +281,25 @@ def nodekill(self, port: int):
                     node.send_signal(signal.SIGTERM)
                 except psutil.NoSuchProcess:
                     pass
+                except psutil.AccessDenied:
+                    pass
 \end{lstlisting}
 
 Per quanto riguarda l'esecuzione dei test, questa avviene in maniera interattiva: l'utente può decidere quale tipo di test eseguire, quale algoritmo utilizzare e il numero di processi che vengono creati (partendo da un minimo di quattro).
 
-%%%%%%%%%%%%%%%%%%%%%%-------------------------\
-\section{Deployment}
 
-The network is deployed on an \textbf{AWS EC2} instance where every node runs on a \textbf{Docker} container. 
-\href{https://docs.docker.com/compose/}{\textbf{Docker Compose}} is used to automate the container's creation\footnote{See \textit{SDCC/sdcc/docker-compose.yml},  \textit{SDCC/sdcc/node/Dockerfile} and \textit{SDCC/sdcc/register/Dockerfile}.}. 
+\section{Esecuzione}
 
-By default, \textbf{Docker Compose} creates a network where containers can communicate with each other, so that is used. 
+L'applicazione può essere eseguita in due modi diversi:
+\begin{enumerate}
+    \item Esecuzione locale senza container \textbf{Docker};
+    \item Esecuzione remota su un'istanza \textbf{EC2 con AWS} usando container \textbf{Docker}.
+\end{enumerate}
+
+Nel primo caso, basta l'esecuzione da linea di comando con gli appositi flag, sfruttando il file \textit{config.json} per gestire le impostazioni della rete.
+
+Invece nel secondo caso, il programma viene sviluppato su un'istanza \textbf{EC2 con AWS}, dove ogni nodo viene eseguito su un container \textbf{Docker}.
+Successivamente si sfrutta \textbf{Docker Compose}: tramite il file \textit{docker-compose.yml} si può utilizzare un singolo comando per creare e avviare tutti i servizi necessari, creando una rete privata all'interno della quale i container possono comunicare tra di loro.
 
 \begin{figure}[htbp]\label{fig:arch}
   \centering
@@ -296,18 +307,6 @@ By default, \textbf{Docker Compose} creates a network where containers can commu
   \caption{Deployment using \textbf{AWS EC2} instance and \textbf{Docker} containers.}
 \end{figure}
 
-To automate the deployment procedure \href{https://www.ansible.com/}{\textbf{Ansible}} is used to install \textbf{Docker} and to forward the code application on an \textbf{EC2} instance. See \ref{fig:aws}.
-
-\section{How To Use}\label{how}
-
-The application can be run in two different ways:
-
-\begin{enumerate}
-    \item Local execution without \textbf{Docker} containers
-    \item Remote execution on \textbf{AWS EC2} instance using \textbf{Docker} containers \footnote{That execution requires an \textbf{AWS} account.}(as shown in \ref{fig:arch})
-\end{enumerate}
-
-The complete list of commands is available \href{https://github.com/matt-merman/SDCC#running}{here}.
 
 \section{Running Examples}
 
@@ -330,7 +329,23 @@ The complete list of commands is available \href{https://github.com/matt-merman/
 \includegraphics[width=\linewidth]{figure/aws_demo.png}
 \caption{\textbf{Docker}, \textbf{Docker Compose} and application code info on an \textbf{AWS EC2} instance.}
 \end{figure}
-INSERIRE SCREEN DI CMD PER QUALCOSA----------------------------------------------------------/
 \printbibliography
+
+% screen di: verbose durante l'esecuzione (inquadrare DEBUG)
+		% test quando eseguo (console principale) e cosa fanno i comandi
+		% test finishing
+		% fase di register (3 nodi che inviano richiesta al register che risponde (e basta, fino a qui))
+		% fase di heartbeat (messaggi 3 5 3 5 3)
+		% messaggio answer in bully (2)
+		% fase di election
+
+% per quanto riguarda aws (da mettere in "Esecuzione")
+		% installo docker, docker compose, migro il codice e faccio vedere che ho installato
+		% docker --version E docker-compose --version
+		% screen quando scrivo LL per far vedere che c'è la cartella mia!!!!!
+
+% :)
+
+
 
 \end{document}

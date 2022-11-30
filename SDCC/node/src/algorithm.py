@@ -3,7 +3,6 @@ import socket
 import time
 import signal as sign
 from . import verbose as verbose
-
 import sys
 import os
 from . import helpers as helpers
@@ -34,20 +33,22 @@ class Algorithm (ABC):
         self.id = id
         self.nodes = nodes
         self.socket = socket
+
+        # parametri passati da linea di comando
+        self.verb = verb
+        self.delay = delay
         self.algorithm = algorithm
 
         self.coordid = coordid
+
+
         self.lock = Lock()
-
-        # parametri passati da linea di comando
-        self.delay = delay
-        self.verb = verb
-
-        sign.signal(sign.SIGTERM, self.handler)
 
         self.logging = verbose.set_logging()
 
         self.participant = False
+
+        sign.signal(sign.SIGINT, self.handler)
 
         # entrambi gli algoritmi inizializzano un listening thread
         thread = Thread(target = self.listening)
@@ -116,19 +117,17 @@ class Algorithm (ABC):
 
             data = eval(data.decode('utf-8'))
 
-            verbose.logging_rx(self.verb, self.logging, (self.ip, self.port),
-                              address, self.id, data)
+            verbose.logging_rx(self.verb, self.logging, (self.ip, self.port), address, self.id, data)
 
             # messaggio di tipo 3
             if data["type"] == Type['HEARTBEAT'].value:
 
-                helpers.delay(self.delay, constants.TOTAL_DELAY)
+                if self.delay:
+                    helpers.delay(constants.TOTAL_DELAY)
 
-                msg = helpers.message(
-                    self.id, Type['ACK'].value, self.port, self.ip)
+                msg = helpers.message(self.id, Type['ACK'].value, self.port, self.ip)
 
-                verbose.logging_tx(self.verb, self.logging, address,
-                                  (self.ip, self.port), self.id, eval(msg.decode('utf-8')))
+                verbose.logging_tx(self.verb, self.logging, address, (self.ip, self.port), self.id, eval(msg.decode('utf-8')))
 
                 connection.send(msg)
                 connection.close()
@@ -140,9 +139,7 @@ class Algorithm (ABC):
                 connection.close()
                 continue
 
-            func = {Type['ELECTION'].value: self.election,
-                    Type['END'].value: self.end
-                    }
+            func = {Type['ELECTION'].value: self.election, Type['END'].value: self.end}
 
             func[data["type"]](data)
             connection.close()
@@ -163,7 +160,7 @@ class Algorithm (ABC):
             hb_sock = helpers.create_socket(self.ip)
             address = hb_sock.getsockname()
 
-            time.sleep(constants.HEARTBEAT_TIME)
+            time.sleep(constants.HB_TIME)
             self.lock.acquire()
 
             # finché c'è un'elezione in corso non si mandano messaggi di heartbeat
@@ -186,8 +183,11 @@ class Algorithm (ABC):
                 self.receive_ack(hb_sock, destination, constants.TOTAL_DELAY)
 
             # il coordinatore crasha
-            except ConnectionRefusedError:
+            except ConnectionRefusedError or ConnectionError:
                 hb_sock.close()
+                # if (non sto eseguendo test) -> non commentare la prossima riga
+                if not self.delay:
+                    self.coordid = constants.DEFAULT_ID
                 #self.coordid = constants.DEFAULT_ID   # conseguenza: nuova elezione
                 self.crash()
 

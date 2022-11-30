@@ -196,7 +196,8 @@ class Bully(Algorithm):
     # metodo per l'inoltro di un messaggio
     def forwarding(self, nodes: dict, id: int, type: Type, connection: socket):
         # c'è un delay se viene specificato con flag da linea di comando
-        helpers.delay(self.delay, constants.HEARTBEAT_TIME)
+        if self.delay:
+            helpers.delay(constants.HB_TIME)
 
         destination = (nodes["ip"], nodes["port"])
         msg = helpers.message(id, type.value, self.port, self.ip)

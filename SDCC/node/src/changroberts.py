@@ -33,6 +33,7 @@ class ChangRoberts(Algorithm):
 
         if (len(self.nodes) == 1):
             # se solo un nodo -> finish
+            self.logging.debug("Node: (ip: {}, port: {}, id: {})\nFinish\n".format(self.ip, self.port, self.id))
             self.socket.close()
             sys.exit(1)
 
@@ -97,7 +98,8 @@ class ChangRoberts(Algorithm):
     def forwarding(self, id: int, type: Type):
         socket = helpers.create_socket(self.ip)
         # c'è un delay se viene specificato con flag da linea di comando
-        helpers.delay(self.delay, constants.HEARTBEAT_TIME)
+        if self.delay:
+            helpers.delay(constants.HB_TIME)
 
         index = helpers.get_index(self.id, self.nodes) + 1
         if index >= len(self.nodes):
@@ -123,7 +125,7 @@ class ChangRoberts(Algorithm):
             else:
                 self.socket.close()
 
-                os.exit(1)
+                os._exit(1)
 
     def answer(self):
         # metodo che serve solo nel bully

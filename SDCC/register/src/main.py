@@ -30,7 +30,9 @@ class Register:
         # creazione socket
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind((self.ip, self.port))  # associazione socket con una specifica interfaccia di rete e un numero di porta
+
+        # associazione socket con una specifica interfaccia di rete e un numero di porta
+        self.sock.bind((self.ip, self.port))
 
         # inizializzazione lista di connessioni
         self.connections = []
@@ -48,10 +50,11 @@ class Register:
         ids = []
 
         # la socket rimane aperta per un tempo SOCK_TIMEOUT
-        self.sock.settimeout(constants.SOCK_TIMEOUT)
+        self.sock.settimeout(constants.REG_TIMEOUT)
         while True:
             try:
                 conn, addr = self.sock.accept()     # la listening socket accetta connessioni
+
                 # la funzione restituisce coppia (conn, addr):
                 # conn è un nuovo oggetto socket utilizzabile per inviare e ricevere dati sulla connessione
                 # addr è l'indirizzo legato al socket
@@ -90,18 +93,11 @@ class Register:
             port = self.nodes[node]["port"]
             id = self.nodes[node]["id"]
             helpers.logging_tx(self.verbose, self.logging, (ip, port), (self.ip, self.port), id, self.nodes)
-            # if node == ultimo nodo then metti flag
-                #msg = {'type': Type[el].value, 'data': data}
-            #else
-                #msg = {'type': -1, 'data': data}
 
-            #msg = json.dumps(msg)
-            #msg = str(msg).encode('utf-8')
             try:
-                #self.connections[node].send(msg)
                 self.connections[node].send(data)
             except socket.timeout:
-                print("No ack received from node with port {}". format(port))
+                print("No ack received from node with port {}\n". format(port))
 
 
     def handler(self, signum: int, frame):
