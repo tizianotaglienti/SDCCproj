@@ -65,15 +65,13 @@ I comandi necessari per questa esecuzione sono:
 
 ```bash
 # path Desktop
-
 scp -i sdcckeys.pem -r SDCCproj/SDCC ubuntu@ip_instance:/home/ubuntu
-
 ssh -i sdcckeys.pem ubuntu@ec2-ip.instance.compute-1.amazonaws.com
 ```
 
 Una volta dentro, scaricare Docker e Docker Compose ed eseguire:
 
-```
+```bash
 # path SDCCproj/SDCC
 sudo docker-compose up
 ```
